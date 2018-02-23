@@ -1,0 +1,28 @@
+{
+  "name": "rong",
+  "version": "0.1.0",
+  "description": "A game that is almost like Pong.",
+  "main": "server.js",
+  "dependencies": {
+    "express": "^4.16.2"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mion/rong.git"
+  },
+  "keywords": [
+    "game",
+    "pong"
+  ],
+  "author": "Gabriel Vieira and Rafael Lopes",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/mion/rong/issues"
+  },
+  "homepage": "https://github.com/mion/rong#readme"
+}
