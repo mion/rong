@@ -36,8 +36,11 @@ function updateBall(ball, bounds, pad) {
     ball.position.y += ball.velocity.y;
   }
 
-  if (ball.position.dist(pad.position) < (ball.radius + pad.radius)) {
-    ball.velocity.mult(-1);
+  var nextBallPos = p5.Vector.add(ball.position, ball.velocity);
+  var distanceToPad = nextBallPos.dist(pad.position);
+  var minimumDistance = ball.radius + pad.radius;
+  if (distanceToPad < minimumDistance) {
+    console.log('touch');
   }
 }
 
@@ -95,13 +98,13 @@ function drawBounds(game) {
 function drawBall(game) {
   fill('blue');
   noStroke();
-  ellipse(game.ball.position.x, game.ball.position.y, game.ball.radius);
+  ellipse(game.ball.position.x, game.ball.position.y, 2 * game.ball.radius);
 }
 
 function drawPad(game) {
   fill('red');
   noStroke();
-  ellipse(game.pad.position.x, game.pad.position.y, game.pad.radius);
+  ellipse(game.pad.position.x, game.pad.position.y, 2 * game.pad.radius);
 }
 
 function drawGame(game) {
@@ -116,7 +119,7 @@ function drawGame(game) {
 // main p5 callback functions
 function setup() {
   console.log('Welcome to Rong');
-  var initialBallSpeed = 3;
+  var initialBallSpeed = 2;
   var initialBallVelocity = p5.Vector.random2D();
   initialBallVelocity.mult(initialBallSpeed);
 
