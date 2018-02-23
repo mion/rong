@@ -15,7 +15,7 @@ var canvasWidth = 640;
 
 ////////////////////////////////////////////////////////////////////////////////
 // updating functions
-function updateBall(ball, bounds) {
+function updateBall(ball, bounds, pad) {
   if ((ball.position.x + ball.radius) + ball.velocity.x > bounds.x + bounds.width) {
     ball.position.x = (bounds.x + bounds.width) - ball.radius;
     ball.velocity.x *= -1;
@@ -35,10 +35,46 @@ function updateBall(ball, bounds) {
   } else {
     ball.position.y += ball.velocity.y;
   }
+
+  if (ball.position.dist(pad.position) < (ball.radius + pad.radius)) {
+    ball.velocity.mult(-1);
+  }
+}
+
+function updatePad(pad, bounds) {
+  if (keyIsDown(LEFT_ARROW)) {
+    pad.velocity.add(createVector(-1, 0));
+  }
+  if (keyIsDown(RIGHT_ARROW)) {
+    pad.velocity.add(createVector(1, 0));
+  }
+
+  pad.velocity.mult(0.95);
+
+  if ((pad.position.x + pad.radius) + pad.velocity.x > bounds.x + bounds.width) {
+    pad.position.x = (bounds.x + bounds.width) - pad.radius;
+    pad.velocity.x *= -1;
+  } else if ((pad.position.x - pad.radius) + pad.velocity.x < bounds.x) {
+    pad.position.x = bounds.x + pad.radius;
+    pad.velocity.x *= -1;
+  } else {
+    pad.position.x += pad.velocity.x;
+  }
+
+  if ((pad.position.y + pad.radius) + pad.velocity.y > bounds.y + bounds.height) {
+    pad.position.y = (bounds.y + bounds.height) - pad.radius;
+    pad.velocity.y *= -1;
+  } else if ((pad.position.y - pad.radius) + pad.velocity.y < bounds.y) {
+    pad.position.y = bounds.y + pad.radius;
+    pad.velocity.y *= -1;
+  } else {
+    pad.position.y += pad.velocity.y;
+  }
 }
 
 function updateGame(game) {
-  updateBall(game.ball, game.bounds);
+  updateBall(game.ball, game.bounds, game.pad);
+  updatePad(game.pad, game.bounds);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -58,13 +94,32 @@ function drawBounds(game) {
 
 function drawBall(game) {
   fill('blue');
+  noStroke();
   ellipse(game.ball.position.x, game.ball.position.y, game.ball.radius);
+}
+
+function drawPad(game) {
+  fill('red');
+  noStroke();
+  ellipse(game.pad.position.x, game.pad.position.y, game.pad.radius);
+}
+
+function drawGame(game) {
+  clear();
+  drawHUD(game);
+  drawBall(game);
+  drawBounds(game);
+  drawPad(game);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // main p5 callback functions
 function setup() {
   console.log('Welcome to Rong');
+  var initialBallSpeed = 3;
+  var initialBallVelocity = p5.Vector.random2D();
+  initialBallVelocity.mult(initialBallSpeed);
+
   game = {
     score: 0,
     bounds: {
@@ -74,18 +129,21 @@ function setup() {
       height: 400
     },
     ball: {
-      position: {x: 25, y: 50},
-      velocity: {x: 2, y: 6},
+      position: createVector(25, 50),
+      velocity: initialBallVelocity,
       radius: 10
+    },
+    pad: {
+      position: createVector(20, 360),
+      velocity: createVector(0, 0),
+      radius: 20
     }
   };
+
   createCanvas(canvasWidth, canvasHeight);
 }
 
 function draw() {
-  clear();
-  drawHUD(game);
-  drawBall(game);
-  drawBounds(game);
+  drawGame(game);
   updateGame(game);
 }
