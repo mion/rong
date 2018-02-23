@@ -8,7 +8,7 @@
 //  Pedro Masid
 
 ////////////////////////////////////////////////////////////////////////////////
-// global variables
+// configuration
 var game = null;
 var canvasHeight = 480;
 var canvasWidth = 640;
@@ -16,16 +16,35 @@ var canvasWidth = 640;
 ////////////////////////////////////////////////////////////////////////////////
 // updating functions
 function updateBall(game) {
+  var GAME_GRAVITY_CONSTANT = 50.0;
   var ball = game.ball;
   var pad = game.pad;
   var bounds = game.bounds;
 
+  if (keyIsDown(DOWN_ARROW)) {
+    var direction = p5.Vector.sub(pad.position, ball.position);
+    var distance = ball.position.dist(pad.position);
+    var force = (GAME_GRAVITY_CONSTANT * pad.mass * ball.mass) / (distance * distance);
+    ball.acceleration = p5.Vector.mult(direction, force);
+  } else if (keyIsDown(UP_ARROW)) {
+    var direction = p5.Vector.sub(ball.position, pad.position);
+    var distance = ball.position.dist(pad.position);
+    var force = (GAME_GRAVITY_CONSTANT * pad.mass * ball.mass) / (distance * distance);
+    ball.acceleration = p5.Vector.mult(direction, force);
+  } else {
+    ball.acceleration = createVector(0, 0);
+  }
+
+  ball.velocity.add(ball.acceleration);
+
   if ((ball.position.x + ball.radius) + ball.velocity.x > bounds.x + bounds.width) {
     ball.position.x = (bounds.x + bounds.width) - ball.radius;
     ball.velocity.x *= -1;
+    ball.velocity.mult(0.90);
   } else if ((ball.position.x - ball.radius) + ball.velocity.x < bounds.x) {
     ball.position.x = bounds.x + ball.radius;
     ball.velocity.x *= -1;
+    ball.velocity.mult(0.90);
   } else {
     ball.position.x += ball.velocity.x;
   }
@@ -33,9 +52,11 @@ function updateBall(game) {
   if ((ball.position.y + ball.radius) + ball.velocity.y > bounds.y + bounds.height) {
     ball.position.y = (bounds.y + bounds.height) - ball.radius;
     ball.velocity.y *= -1;
+    ball.velocity.mult(0.90);
   } else if ((ball.position.y - ball.radius) + ball.velocity.y < bounds.y) {
     ball.position.y = bounds.y + ball.radius;
     ball.velocity.y *= -1;
+    ball.velocity.mult(0.90);
   } else {
     ball.position.y += ball.velocity.y;
   }
@@ -60,6 +81,7 @@ function updatePad(game) {
   if (keyIsDown(LEFT_ARROW)) {
     pad.velocity.add(createVector(-1, 0));
   }
+
   if (keyIsDown(RIGHT_ARROW)) {
     pad.velocity.add(createVector(1, 0));
   }
@@ -69,9 +91,11 @@ function updatePad(game) {
   if ((pad.position.x + pad.radius) + pad.velocity.x > bounds.x + bounds.width) {
     pad.position.x = (bounds.x + bounds.width) - pad.radius;
     pad.velocity.x *= -1;
+    pad.velocity.mult(0.50);
   } else if ((pad.position.x - pad.radius) + pad.velocity.x < bounds.x) {
     pad.position.x = bounds.x + pad.radius;
     pad.velocity.x *= -1;
+    pad.velocity.mult(0.50);
   } else {
     pad.position.x += pad.velocity.x;
   }
@@ -108,13 +132,19 @@ function drawBounds(game) {
 }
 
 function drawBall(game) {
-  fill('blue');
+  fill('black');
   noStroke();
   ellipse(game.ball.position.x, game.ball.position.y, 2 * game.ball.radius);
 }
 
 function drawPad(game) {
-  fill('red');
+  if (keyIsDown(DOWN_ARROW)) {
+    fill('red');
+  } else if (keyIsDown(UP_ARROW)) {
+    fill('blue');
+  } else {
+    fill('black');
+  }
   noStroke();
   ellipse(game.pad.position.x, game.pad.position.y, 2 * game.pad.radius);
 }
@@ -166,14 +196,19 @@ function setup() {
     ball: {
       mass: 1.0,
       position: createVector(25, 50),
+      acceleration: createVector(0, 0),
       velocity: initialBallVelocity,
-      radius: 10
+      radius: 5
     },
     pad: {
       mass: 1.0,
-      position: createVector(20, 360),
+      position: createVector(
+        GAME_BOUNDS_PADDING + (GAME_BOUNDS_WIDTH / 2),
+        GAME_BOUNDS_PADDING + (GAME_BOUNDS_HEIGHT / 2)
+      ),
+      acceleration: createVector(0, 0),
       velocity: createVector(0, 0),
-      radius: 20
+      radius: 15
     },
     events: []
   };
