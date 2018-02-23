@@ -15,7 +15,11 @@ var canvasWidth = 640;
 
 ////////////////////////////////////////////////////////////////////////////////
 // updating functions
-function updateBall(ball, bounds, pad) {
+function updateBall(game) {
+  var ball = game.ball;
+  var pad = game.pad;
+  var bounds = game.bounds;
+
   if ((ball.position.x + ball.radius) + ball.velocity.x > bounds.x + bounds.width) {
     ball.position.x = (bounds.x + bounds.width) - ball.radius;
     ball.velocity.x *= -1;
@@ -38,13 +42,21 @@ function updateBall(ball, bounds, pad) {
 
   var nextBallPos = p5.Vector.add(ball.position, ball.velocity);
   var distanceToPad = nextBallPos.dist(pad.position);
-  var minimumDistance = ball.radius + pad.radius;
-  if (distanceToPad < minimumDistance) {
-    console.log('touch');
+  var minimumDistanceForCollision = ball.radius + pad.radius;
+  if (distanceToPad < minimumDistanceForCollision) {
+    // var direction = p5.Vector.sub(pad.position, ball.position);
+    // direction.normalize();
+    // direction.rotate(-HALF_PI);
+    // var speed = ball.velocity.mag();
+    // ball.velocity = p5.Vector.mult(direction, speed);
+    game.state = 'GAME_OVER';
   }
 }
 
-function updatePad(pad, bounds) {
+function updatePad(game) {
+  var bounds = game.bounds;
+  var pad = game.pad;
+
   if (keyIsDown(LEFT_ARROW)) {
     pad.velocity.add(createVector(-1, 0));
   }
@@ -76,8 +88,8 @@ function updatePad(pad, bounds) {
 }
 
 function updateGame(game) {
-  updateBall(game.ball, game.bounds, game.pad);
-  updatePad(game.pad, game.bounds);
+  updateBall(game);
+  updatePad(game);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -107,40 +119,63 @@ function drawPad(game) {
   ellipse(game.pad.position.x, game.pad.position.y, 2 * game.pad.radius);
 }
 
+function drawGameOverHUD(game) {
+  textSize(32);
+  fill('black');
+  text('GAME OVER', game.center.x, game.center.y);
+}
+
 function drawGame(game) {
   clear();
-  drawHUD(game);
-  drawBall(game);
-  drawBounds(game);
-  drawPad(game);
+  if (game.state == 'GAME_RUNNING') {
+    drawHUD(game);
+    drawBall(game);
+    drawBounds(game);
+    drawPad(game);
+  } else if (game.state == 'GAME_OVER') {
+    drawGameOverHUD(game);
+  }
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // main p5 callback functions
 function setup() {
   console.log('Welcome to Rong');
-  var initialBallSpeed = 2;
+
+  var GAME_BOUNDS_PADDING = 5;
+  var GAME_BOUNDS_WIDTH = 500;
+  var GAME_BOUNDS_HEIGHT = 400;
+
+  var initialBallSpeed = 5;
   var initialBallVelocity = p5.Vector.random2D();
   initialBallVelocity.mult(initialBallSpeed);
 
   game = {
+    state: 'GAME_RUNNING',
     score: 0,
     bounds: {
-      x: 5,
-      y: 5,
-      width: 500,
-      height: 400
+      x: GAME_BOUNDS_PADDING,
+      y: GAME_BOUNDS_PADDING,
+      width: GAME_BOUNDS_WIDTH,
+      height: GAME_BOUNDS_HEIGHT
     },
+    center: createVector(
+      GAME_BOUNDS_PADDING + (GAME_BOUNDS_WIDTH / 2),
+      GAME_BOUNDS_PADDING + (GAME_BOUNDS_HEIGHT / 2)
+    ),
     ball: {
+      mass: 1.0,
       position: createVector(25, 50),
       velocity: initialBallVelocity,
       radius: 10
     },
     pad: {
+      mass: 1.0,
       position: createVector(20, 360),
       velocity: createVector(0, 0),
       radius: 20
-    }
+    },
+    events: []
   };
 
   createCanvas(canvasWidth, canvasHeight);
