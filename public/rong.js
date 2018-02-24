@@ -163,16 +163,13 @@ function updateBall(ball, game) {
     ball.position.y += ball.velocity.y;
   }
 
-  var nextBallPos = p5.Vector.add(ball.position, ball.velocity);
-  var distanceToPad = nextBallPos.dist(pad.position);
-  var minimumDistanceForCollision = ball.radius + pad.radius;
-  if (distanceToPad < minimumDistanceForCollision) {
-    // var direction = p5.Vector.sub(pad.position, ball.position);
-    // direction.normalize();
-    // direction.rotate(-HALF_PI);
-    // var speed = ball.velocity.mag();
-    // ball.velocity = p5.Vector.mult(direction, speed);
-    // game.state = 'GAME_OVER';
+  if (ball.type === 'player') {
+    var nextBallPos = p5.Vector.add(ball.position, ball.velocity);
+    var distanceToPad = nextBallPos.dist(pad.position);
+    var minimumDistanceForCollision = ball.radius + pad.radius;
+    if (distanceToPad < minimumDistanceForCollision) {
+      game.state = 'GAME_OVER';
+    }
   }
 }
 
@@ -256,13 +253,20 @@ function updateGame(game) {
 ////////////////////////////////////////////////////////////////////////////////
 // drawing functions
 function drawHUD(game) {
-  var SPACE_AFTER_BOUNDS = 25;
-  textSize(13);
+  var HUD_PADDING = 25;
+  var HUD_TEXT_SIZE = 13;
+  var GOLDEN_RATIO = 1.61803398875;
+  textSize(HUD_TEXT_SIZE);
   fill('white');
   text(
-    game.score + " pts.",
-    GAME_BOUNDS_PADDING + SPACE_AFTER_BOUNDS/2,
-    GAME_BOUNDS_PADDING + SPACE_AFTER_BOUNDS
+    "LEVEL " + game.level,
+    GAME_BOUNDS_PADDING + (HUD_PADDING / 2),
+    GAME_BOUNDS_PADDING + HUD_PADDING
+  );
+  text(
+    "SCORE " + game.score,
+    GAME_BOUNDS_PADDING + (HUD_PADDING / 2),
+    (HUD_TEXT_SIZE * GOLDEN_RATIO) + GAME_BOUNDS_PADDING + HUD_PADDING
   );
 }
 
