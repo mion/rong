@@ -274,7 +274,7 @@ function drawBounds(game) {
 
 function drawBall(ball) {
   if (ball.type === 'player') {
-    fill('yellow');
+    fill('white');
   } else {
     fill('gray');
   }
@@ -283,36 +283,30 @@ function drawBall(ball) {
 }
 
 function drawTarget(target) {
-  var targetThickness = 4;
+  var targetThickness = 5;
+  fill('red');
+  noStroke();
   if (target.type === 'TARGET_TOP') {
     var targetCenterX = GAME_BOUNDS_PADDING + GAME_BOUNDS_WIDTH * target.axis;
     var targetSize = GAME_BOUNDS_WIDTH * target.size;
     var targetLeftMostX = targetCenterX - (targetSize / 2);
-    fill('green');
-    noStroke();
     rect(targetLeftMostX, GAME_BOUNDS_PADDING, targetSize, targetThickness);
   } else if (target.type === 'TARGET_BOTTOM') {
     var targetCenterX = GAME_BOUNDS_PADDING + GAME_BOUNDS_WIDTH * target.axis;
     var targetSize = GAME_BOUNDS_WIDTH * target.size;
     var targetLeftMostX = targetCenterX - (targetSize / 2);
-    fill('green');
-    noStroke();
     rect(targetLeftMostX, GAME_BOUNDS_PADDING + GAME_BOUNDS_HEIGHT, targetSize, targetThickness);
   } else if (target.type === 'TARGET_LEFT') {
     var targetCenterY = GAME_BOUNDS_PADDING + GAME_BOUNDS_HEIGHT * target.axis;
     var targetSize = GAME_BOUNDS_HEIGHT * target.size;
     var targetTopMostY = targetCenterY - (targetSize / 2);
     var targetBottomMostY = targetCenterY + (targetSize / 2);
-    fill('green');
-    noStroke();
     rect(GAME_BOUNDS_PADDING, targetTopMostY, targetThickness, targetSize);
   } else if (target.type === 'TARGET_RIGHT') {
     var targetCenterY = GAME_BOUNDS_PADDING + GAME_BOUNDS_HEIGHT * target.axis;
     var targetSize = GAME_BOUNDS_HEIGHT * target.size;
     var targetTopMostY = targetCenterY - (targetSize / 2);
     var targetBottomMostY = targetCenterY + (targetSize / 2);
-    fill('green');
-    noStroke();
     rect(GAME_BOUNDS_PADDING + GAME_BOUNDS_WIDTH, targetTopMostY, targetThickness, targetSize);
   } else {
     throw('unknown target type: ' + target.type);
@@ -321,9 +315,9 @@ function drawTarget(target) {
 
 function drawPad(game) {
   if (keyIsDown(DOWN_ARROW)) {
-    fill('red');
+    fill('orange');
   } else if (keyIsDown(UP_ARROW)) {
-    fill('blue');
+    fill('purple');
   } else {
     fill('white');
   }
