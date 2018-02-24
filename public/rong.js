@@ -70,7 +70,7 @@ function updateBall(ball, pad, bounds) {
     // direction.rotate(-HALF_PI);
     // var speed = ball.velocity.mag();
     // ball.velocity = p5.Vector.mult(direction, speed);
-    game.state = 'GAME_OVER';
+    // game.state = 'GAME_OVER';
   }
 }
 
@@ -123,9 +123,13 @@ function updateGame(game) {
 // drawing functions
 function drawHUD(game) {
   var SPACE_AFTER_BOUNDS = 25;
-  textSize(16);
+  textSize(13);
   fill('white');
-  text('Score: ' + game.score, game.bounds.x, game.bounds.y + game.bounds.height + SPACE_AFTER_BOUNDS);
+  text(
+    game.score + " pts.",
+    GAME_BOUNDS_PADDING + SPACE_AFTER_BOUNDS/2,
+    GAME_BOUNDS_PADDING + SPACE_AFTER_BOUNDS
+  );
 }
 
 function drawBounds(game) {
@@ -135,9 +139,37 @@ function drawBounds(game) {
 }
 
 function drawBall(ball) {
-  fill('white');
+  if (ball.type === 'player') {
+    fill('yellow');
+  } else {
+    fill('gray');
+  }
   noStroke();
   ellipse(ball.position.x, ball.position.y, 2 * ball.radius);
+}
+
+function drawTarget(target) {
+  var x = GAME_BOUNDS_PADDING,
+      y = GAME_BOUNDS_PADDING,
+      w = 5,
+      h = 5;
+  if (target.type === 'TARGET_TOP') {
+    x = GAME_BOUNDS_PADDING + (target.axis * GAME_BOUNDS_WIDTH);
+    w = GAME_BOUNDS_WIDTH * target.size;
+  } else if (target.type === 'TARGET_BOTTOM') {
+    y = GAME_BOUNDS_PADDING + GAME_BOUNDS_HEIGHT;
+    x = GAME_BOUNDS_WIDTH * target.size;
+  } else if (target.type === 'TARGET_LEFT') {
+    y = GAME_BOUNDS_PADDING + (target.axis * GAME_BOUNDS_HEIGHT);
+  } else if (target.type === 'TARGET_RIGHT') {
+    y = GAME_BOUNDS_PADDING + (target.axis * GAME_BOUNDS_HEIGHT);
+    x = GAME_BOUNDS_PADDING + GAME_BOUNDS_WIDTH;
+  } else {
+    throw('unknown target type: ' + target.type);
+  }
+  fill('green');
+  noStroke();
+  rect(x, y, w, h);
 }
 
 function drawPad(game) {
@@ -167,6 +199,10 @@ function drawGame(game) {
       drawBall(ball);
     }
     drawPad(game);
+    for (var i = 0; i < game.targets.length; i++) {
+      var target = game.targets[i];
+      drawTarget(target);
+    }
     drawHUD(game);
   } else if (game.state == 'GAME_OVER') {
     drawGameOverHUD(game);
@@ -178,13 +214,47 @@ function drawGame(game) {
 function setup() {
   console.log('Welcome to Rong');
 
-  var initialBallSpeed = 5;
+  var initialBallSpeed = 5*random();
   var initialBallVelocity = p5.Vector.random2D();
   initialBallVelocity.mult(initialBallSpeed);
+
+  var balls = _.times(100, function (n) {
+    return {
+      type: 'decoration',
+      mass: 0.1,
+      position: createVector(
+        GAME_BOUNDS_PADDING + 5 + (random() * GAME_BOUNDS_WIDTH),
+        GAME_BOUNDS_PADDING + 5 + (random() * GAME_BOUNDS_HEIGHT)
+      ),
+      acceleration: createVector(0, 0),
+      velocity: createVector(
+        random(),
+        random()
+      ),
+      radius: 1.0
+    };
+  }).concat({
+    type: 'player',
+    mass: 0.2,
+    position: createVector(
+      GAME_BOUNDS_WIDTH * random(),
+      GAME_BOUNDS_HEIGHT * random()
+    ),
+    acceleration: createVector(0, 0),
+    velocity: createVector(0, 0),
+    radius: 2.5
+  });
 
   game = {
     state: 'GAME_RUNNING',
     score: 0,
+    targets: [
+      {
+        type: 'TARGET_TOP',
+        axis: 0.5,
+        size: 0.125
+      }
+    ],
     bounds: {
       x: GAME_BOUNDS_PADDING,
       y: GAME_BOUNDS_PADDING,
@@ -195,20 +265,9 @@ function setup() {
       GAME_BOUNDS_PADDING + (GAME_BOUNDS_WIDTH / 2),
       GAME_BOUNDS_PADDING + (GAME_BOUNDS_HEIGHT / 2)
     ),
-    balls: _.times(10, function (n) {
-      return {
-        mass: 1.0,
-        position: createVector(
-          GAME_BOUNDS_PADDING + 5 + (random() * GAME_BOUNDS_WIDTH),
-          GAME_BOUNDS_PADDING + 5 + (random() * GAME_BOUNDS_HEIGHT)
-        ),
-        acceleration: createVector(0, 0),
-        velocity: initialBallVelocity,
-        radius: 5
-      };
-    }),
+    balls: balls,
     pad: {
-      mass: 1.0,
+      mass: 2.5,
       position: createVector(
         GAME_BOUNDS_PADDING + (GAME_BOUNDS_WIDTH / 2),
         GAME_BOUNDS_PADDING + (GAME_BOUNDS_HEIGHT / 2)
