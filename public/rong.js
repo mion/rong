@@ -17,8 +17,38 @@ var GAME_BOUNDS_WIDTH = CANVAS_WIDTH - 2*GAME_BOUNDS_PADDING;
 var GAME_BOUNDS_HEIGHT = CANVAS_HEIGHT - 2*GAME_BOUNDS_PADDING;
 
 ////////////////////////////////////////////////////////////////////////////////
+// prototypes
+
+var WallHitEvent = function(opts) {
+  this.type = 'WALL_HIT_EVENT';
+  this.wall = opts.wall;
+  this.ball = opts.ball;
+  return this;
+}
+
+WallHitEvent.prototype.process = function(game) {
+  console.log('This ball hit the ' + this.wall + ' wall: ', this.ball);
+  var hitTargetIndex = null;
+  for (var i = 0; i < game.targets.length; i++) {
+    var target = game.targets[i];
+    if (target.type === 'TARGET_TOP' && this.ball.position.y < game.center.y) {
+      var targetCenterX = GAME_BOUNDS_PADDING + GAME_BOUNDS_WIDTH * target.axis;
+      var targetSize = GAME_BOUNDS_WIDTH * target.size;
+      var targetLeftMostX = targetCenterX - (targetSize / 2);
+      var targetRightMostX = targetCenterX + (targetSize / 2);
+      if ((targetLeftMostX <= this.ball.position.x) && (this.ball.position.x <= targetRightMostX)) {
+        console.log('Target hit ("'+target.type+'")');
+      }
+    }
+  }
+  return true;
+};
+
+////////////////////////////////////////////////////////////////////////////////
 // updating functions
-function updateBall(ball, pad, bounds) {
+function updateBall(ball, game) {
+  var pad = game.pad;
+  var bounds = game.bounds;
   var GAME_GRAVITY_CONSTANT = 80.0;
 
   if (keyIsDown(DOWN_ARROW)) {
@@ -41,10 +71,16 @@ function updateBall(ball, pad, bounds) {
     ball.position.x = (bounds.x + bounds.width) - ball.radius;
     ball.velocity.x *= -1;
     ball.velocity.mult(0.90);
+    if (ball.type === 'player') {
+      game.events.push(new WallHitEvent({wall: 'WALL_RIGHT', ball: ball}));
+    }
   } else if ((ball.position.x - ball.radius) + ball.velocity.x < bounds.x) {
     ball.position.x = bounds.x + ball.radius;
     ball.velocity.x *= -1;
     ball.velocity.mult(0.90);
+    if (ball.type === 'player') {
+      game.events.push(new WallHitEvent({wall: 'WALL_LEFT', ball: ball}));
+    }
   } else {
     ball.position.x += ball.velocity.x;
   }
@@ -53,10 +89,16 @@ function updateBall(ball, pad, bounds) {
     ball.position.y = (bounds.y + bounds.height) - ball.radius;
     ball.velocity.y *= -1;
     ball.velocity.mult(0.90);
+    if (ball.type === 'player') {
+      game.events.push(new WallHitEvent({wall: 'WALL_BOTTOM', ball: ball}));
+    }
   } else if ((ball.position.y - ball.radius) + ball.velocity.y < bounds.y) {
     ball.position.y = bounds.y + ball.radius;
     ball.velocity.y *= -1;
     ball.velocity.mult(0.90);
+    if (ball.type === 'player') {
+      game.events.push(new WallHitEvent({wall: 'WALL_TOP', ball: ball}));
+    }
   } else {
     ball.position.y += ball.velocity.y;
   }
@@ -111,11 +153,43 @@ function updatePad(game) {
   }
 }
 
+// function updateTarget(target, game) {
+//   var indexesToBeRemoved = [];
+//   for (var i = 0; i < game.events.length; i++) {
+//     var event = game.events[i];
+//     if (event.type == 'WALL_HIT_EVENT') {
+//       event.process();
+//       indexesToBeRemoved.push(i);
+//     }
+//   }
+//   while (indexesToBeRemoved.length > 0) {
+//     var index = indexesToBeRemoved.pop();
+//     game.events.splice(index, 1);
+//   }
+// }
+
 function updateGame(game) {
+  var indexesToBeRemoved = [];
+  for (var i = 0; i < game.events.length; i++) {
+    if (game.events[i].process(game)) {
+      indexesToBeRemoved.push(i);
+    }
+  }
+  while (indexesToBeRemoved.length > 0) {
+    var index = indexesToBeRemoved.pop();
+    game.events.splice(index, 1);
+  }
+
   for (var i = 0; i < game.balls.length; i++) {
     var ball = game.balls[i];
-    updateBall(ball, game.pad, game.bounds);
+    updateBall(ball, game);
   }
+
+  // for (var i = 0; i < game.targets.length; i++) {
+  //   var target = game.targets[i];
+  //   updateTarget(target, game);
+  // }
+
   updatePad(game);
 }
 
@@ -246,6 +320,7 @@ function setup() {
   });
 
   game = {
+    events: [],
     state: 'GAME_RUNNING',
     score: 0,
     targets: [
