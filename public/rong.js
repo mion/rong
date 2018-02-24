@@ -38,6 +38,9 @@ WallHitEvent.prototype.process = function(game) {
       var targetRightMostX = targetCenterX + (targetSize / 2);
       if ((targetLeftMostX <= this.ball.position.x) && (this.ball.position.x <= targetRightMostX)) {
         updateTargetAfterHit(target, this.ball, game);
+        game.hitComboCounter += 1;
+      } else {
+        game.hitComboCounter = 0 ;
       }
     } else if (target.type === 'TARGET_BOTTOM' && this.ball.position.y > game.center.y) {
       var targetCenterX = GAME_BOUNDS_PADDING + GAME_BOUNDS_WIDTH * target.axis;
@@ -46,6 +49,9 @@ WallHitEvent.prototype.process = function(game) {
       var targetRightMostX = targetCenterX + (targetSize / 2);
       if ((targetLeftMostX <= this.ball.position.x) && (this.ball.position.x <= targetRightMostX)) {
         updateTargetAfterHit(target, this.ball, game);
+        game.hitComboCounter += 1;
+      } else {
+        game.hitComboCounter = 0 ;
       }
     } else if (target.type === 'TARGET_LEFT' && this.ball.position.x < game.center.x) {
       var targetCenterY = GAME_BOUNDS_PADDING + GAME_BOUNDS_HEIGHT * target.axis;
@@ -54,6 +60,9 @@ WallHitEvent.prototype.process = function(game) {
       var targetBottomMostY = targetCenterY + (targetSize / 2);
       if ((targetBottomMostY >= this.ball.position.y) && (this.ball.position.y >= targetTopMostY)) {
         updateTargetAfterHit(target, this.ball, game);
+        game.hitComboCounter += 1;
+      } else {
+        game.hitComboCounter = 0 ;
       }
     } else if (target.type === 'TARGET_RIGHT' && this.ball.position.x > game.center.x) {
       var targetCenterY = GAME_BOUNDS_PADDING + GAME_BOUNDS_HEIGHT * target.axis;
@@ -62,6 +71,9 @@ WallHitEvent.prototype.process = function(game) {
       var targetBottomMostY = targetCenterY + (targetSize / 2);
       if ((targetBottomMostY >= this.ball.position.y) && (this.ball.position.y >= targetTopMostY)) {
         updateTargetAfterHit(target, this.ball, game);
+        game.hitComboCounter += 1;
+      } else {
+        game.hitComboCounter = 0 ;
       }
     }
   }
@@ -278,6 +290,19 @@ function drawHUD(game) {
     "TIME " + timeElapsedSeconds,
     GAME_BOUNDS_PADDING + (HUD_PADDING / 2),
     2 * (HUD_TEXT_SIZE * GOLDEN_RATIO) + GAME_BOUNDS_PADDING + HUD_PADDING
+  );
+  text(
+    "COMBO " + game.hitComboCounter,
+    GAME_BOUNDS_PADDING + (HUD_PADDING / 2),
+    3 * (HUD_TEXT_SIZE * GOLDEN_RATIO) + GAME_BOUNDS_PADDING + HUD_PADDING
+  );
+  var playerBall = _.filter(game.balls, function (ball) {
+    return ball.type === 'player';
+  })[0];
+  text(
+    "SPEED " + Math.round(playerBall.velocity.mag()),
+    GAME_BOUNDS_PADDING + (HUD_PADDING / 2),
+    4 * (HUD_TEXT_SIZE * GOLDEN_RATIO) + GAME_BOUNDS_PADDING + HUD_PADDING
   );
 }
 
