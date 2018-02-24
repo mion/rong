@@ -83,15 +83,19 @@ function updateTargetAfterHit(target, ball, game) {
     game.targets.splice(targetIndexToBeRemoved, 1);
     var SCORE_BASE = 50;
     var SCORE_SPEED_BONUS = 20;
-    var SCORE_TIME_BONUS = 30;
+    var SCORE_TIME_BONUS = 1000;
+    var SCORE_TIME_CONSTANT = 1 / (0.9 * 4);
+    var currentTime = (new Date()).getTime();
+    var timeElapsedSeconds = Math.round((currentTime - game.timeLevelStartedAt) / 1000);
     var targetHitPointsWorth =
       SCORE_BASE +
       (SCORE_SPEED_BONUS * p5.Vector.mag(ball.velocity)) +
-      SCORE_TIME_BONUS;
+      (SCORE_TIME_BONUS * (1 / timeElapsedSeconds * SCORE_TIME_CONSTANT));
     game.score += Math.round(targetHitPointsWorth);
     if (game.targets.length === 0) {
       console.log('New level');
       game.level += 1;
+      game.timeLevelStartedAt = (new Date()).getTime();
       _.each(['TARGET_TOP', 'TARGET_LEFT', 'TARGET_RIGHT', 'TARGET_BOTTOM'], function (type) {
         var size = 0.1 + (0.15 * (1 / game.level));
         var target = new Target(type, {
@@ -268,6 +272,13 @@ function drawHUD(game) {
     GAME_BOUNDS_PADDING + (HUD_PADDING / 2),
     (HUD_TEXT_SIZE * GOLDEN_RATIO) + GAME_BOUNDS_PADDING + HUD_PADDING
   );
+  var currentTime = (new Date()).getTime();
+  var timeElapsedSeconds = Math.round((currentTime - game.timeLevelStartedAt) / 1000);
+  text(
+    "TIME " + timeElapsedSeconds,
+    GAME_BOUNDS_PADDING + (HUD_PADDING / 2),
+    2 * (HUD_TEXT_SIZE * GOLDEN_RATIO) + GAME_BOUNDS_PADDING + HUD_PADDING
+  );
 }
 
 function drawBounds(game) {
@@ -409,6 +420,8 @@ function setup() {
 
   game = {
     level: 1,
+    timeLevelStartedAt: (new Date()).getTime(),
+    hitComboCounter: 0,
     events: [],
     state: 'GAME_RUNNING',
     score: 0,
