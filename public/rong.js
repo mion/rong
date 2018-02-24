@@ -37,7 +37,31 @@ WallHitEvent.prototype.process = function(game) {
       var targetLeftMostX = targetCenterX - (targetSize / 2);
       var targetRightMostX = targetCenterX + (targetSize / 2);
       if ((targetLeftMostX <= this.ball.position.x) && (this.ball.position.x <= targetRightMostX)) {
-        console.log('Target hit ("'+target.type+'")');
+        updateTargetAfterHit(target, game);
+      }
+    } else if (target.type === 'TARGET_BOTTOM' && this.ball.position.y > game.center.y) {
+      var targetCenterX = GAME_BOUNDS_PADDING + GAME_BOUNDS_WIDTH * target.axis;
+      var targetSize = GAME_BOUNDS_WIDTH * target.size;
+      var targetLeftMostX = targetCenterX - (targetSize / 2);
+      var targetRightMostX = targetCenterX + (targetSize / 2);
+      if ((targetLeftMostX <= this.ball.position.x) && (this.ball.position.x <= targetRightMostX)) {
+        updateTargetAfterHit(target, game);
+      }
+    } else if (target.type === 'TARGET_LEFT' && this.ball.position.x < game.center.x) {
+      var targetCenterY = GAME_BOUNDS_PADDING + GAME_BOUNDS_HEIGHT * target.axis;
+      var targetSize = GAME_BOUNDS_HEIGHT * target.size;
+      var targetTopMostY = targetCenterY - (targetSize / 2);
+      var targetBottomMostY = targetCenterY + (targetSize / 2);
+      if ((targetBottomMostY <= this.ball.position.y) && (this.ball.position.y <= targetTopMostY)) {
+        updateTargetAfterHit(target, game);
+      }
+    } else if (target.type === 'TARGET_RIGHT' && this.ball.position.x > game.center.x) {
+      var targetCenterY = GAME_BOUNDS_PADDING + GAME_BOUNDS_HEIGHT * target.axis;
+      var targetSize = GAME_BOUNDS_HEIGHT * target.size;
+      var targetTopMostY = targetCenterY - (targetSize / 2);
+      var targetBottomMostY = targetCenterY + (targetSize / 2);
+      if ((targetBottomMostY <= this.ball.position.y) && (this.ball.position.y <= targetTopMostY)) {
+        updateTargetAfterHit(target, game);
       }
     }
   }
@@ -46,6 +70,11 @@ WallHitEvent.prototype.process = function(game) {
 
 ////////////////////////////////////////////////////////////////////////////////
 // updating functions
+function updateTargetAfterHit(target, game) {
+  console.log('Target hit ("'+target.type+'")');
+  game.score += 50;
+}
+
 function updateBall(ball, game) {
   var pad = game.pad;
   var bounds = game.bounds;
@@ -223,27 +252,40 @@ function drawBall(ball) {
 }
 
 function drawTarget(target) {
-  var x = GAME_BOUNDS_PADDING,
-      y = GAME_BOUNDS_PADDING,
-      w = 5,
-      h = 5;
+  var targetThickness = 4;
   if (target.type === 'TARGET_TOP') {
-    x = GAME_BOUNDS_PADDING + (target.axis * GAME_BOUNDS_WIDTH);
-    w = GAME_BOUNDS_WIDTH * target.size;
+    var targetCenterX = GAME_BOUNDS_PADDING + GAME_BOUNDS_WIDTH * target.axis;
+    var targetSize = GAME_BOUNDS_WIDTH * target.size;
+    var targetLeftMostX = targetCenterX - (targetSize / 2);
+    fill('yellow');
+    noStroke();
+    rect(targetLeftMostX, GAME_BOUNDS_PADDING, targetSize, targetThickness);
   } else if (target.type === 'TARGET_BOTTOM') {
-    y = GAME_BOUNDS_PADDING + GAME_BOUNDS_HEIGHT;
-    x = GAME_BOUNDS_WIDTH * target.size;
+    var targetCenterX = GAME_BOUNDS_PADDING + GAME_BOUNDS_WIDTH * target.axis;
+    var targetSize = GAME_BOUNDS_WIDTH * target.size;
+    var targetLeftMostX = targetCenterX - (targetSize / 2);
+    fill('yellow');
+    noStroke();
+    rect(targetLeftMostX, GAME_BOUNDS_PADDING + GAME_BOUNDS_HEIGHT, targetSize, targetThickness);
   } else if (target.type === 'TARGET_LEFT') {
-    y = GAME_BOUNDS_PADDING + (target.axis * GAME_BOUNDS_HEIGHT);
+    var targetCenterY = GAME_BOUNDS_PADDING + GAME_BOUNDS_HEIGHT * target.axis;
+    var targetSize = GAME_BOUNDS_HEIGHT * target.size;
+    var targetTopMostY = targetCenterY - (targetSize / 2);
+    var targetBottomMostY = targetCenterY + (targetSize / 2);
+    fill('yellow');
+    noStroke();
+    rect(targetTopMostY, GAME_BOUNDS_PADDING, targetThickness, targetSize);
   } else if (target.type === 'TARGET_RIGHT') {
-    y = GAME_BOUNDS_PADDING + (target.axis * GAME_BOUNDS_HEIGHT);
-    x = GAME_BOUNDS_PADDING + GAME_BOUNDS_WIDTH;
+    var targetCenterY = GAME_BOUNDS_PADDING + GAME_BOUNDS_HEIGHT * target.axis;
+    var targetSize = GAME_BOUNDS_HEIGHT * target.size;
+    var targetTopMostY = targetCenterY - (targetSize / 2);
+    var targetBottomMostY = targetCenterY + (targetSize / 2);
+    fill('yellow');
+    noStroke();
+    rect(targetTopMostY, GAME_BOUNDS_PADDING + GAME_BOUNDS_WIDTH, targetThickness, targetSize);
   } else {
     throw('unknown target type: ' + target.type);
   }
-  fill('green');
-  noStroke();
-  rect(x, y, w, h);
 }
 
 function drawPad(game) {
@@ -282,6 +324,19 @@ function drawGame(game) {
     drawGameOverHUD(game);
   }
 }
+
+// var Target = new function(type, opts) {
+//   this.type = type;
+//   this.axis = opts.axis;
+//   this.size = opts.size;
+//   return this;
+// };
+//
+// Target.prototype.centerX = function () {
+//   if (this.type === 'TARGET_TOP') {
+//
+//   }
+// };
 
 ////////////////////////////////////////////////////////////////////////////////
 // main p5 callback functions
