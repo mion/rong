@@ -10,16 +10,16 @@
 ////////////////////////////////////////////////////////////////////////////////
 // configuration
 var game = null;
-var canvasHeight = 480;
-var canvasWidth = 640;
+var CANVAS_HEIGHT = 600;
+var CANVAS_WIDTH = 600;
+var GAME_BOUNDS_PADDING = 5;
+var GAME_BOUNDS_WIDTH = CANVAS_WIDTH - 2*GAME_BOUNDS_PADDING;
+var GAME_BOUNDS_HEIGHT = CANVAS_HEIGHT - 2*GAME_BOUNDS_PADDING;
 
 ////////////////////////////////////////////////////////////////////////////////
 // updating functions
-function updateBall(game) {
-  var GAME_GRAVITY_CONSTANT = 50.0;
-  var ball = game.ball;
-  var pad = game.pad;
-  var bounds = game.bounds;
+function updateBall(ball, pad, bounds) {
+  var GAME_GRAVITY_CONSTANT = 80.0;
 
   if (keyIsDown(DOWN_ARROW)) {
     var direction = p5.Vector.sub(pad.position, ball.position);
@@ -79,11 +79,11 @@ function updatePad(game) {
   var pad = game.pad;
 
   if (keyIsDown(LEFT_ARROW)) {
-    pad.velocity.add(createVector(-1, 0));
+    pad.velocity.add(createVector(-0.5, 0));
   }
 
   if (keyIsDown(RIGHT_ARROW)) {
-    pad.velocity.add(createVector(1, 0));
+    pad.velocity.add(createVector(0.5, 0));
   }
 
   pad.velocity.mult(0.95);
@@ -112,7 +112,10 @@ function updatePad(game) {
 }
 
 function updateGame(game) {
-  updateBall(game);
+  for (var i = 0; i < game.balls.length; i++) {
+    var ball = game.balls[i];
+    updateBall(ball, game.pad, game.bounds);
+  }
   updatePad(game);
 }
 
@@ -121,20 +124,20 @@ function updateGame(game) {
 function drawHUD(game) {
   var SPACE_AFTER_BOUNDS = 25;
   textSize(16);
-  fill('black');
+  fill('white');
   text('Score: ' + game.score, game.bounds.x, game.bounds.y + game.bounds.height + SPACE_AFTER_BOUNDS);
 }
 
 function drawBounds(game) {
-  noFill();
-  stroke('black');
+  fill('black');
+  stroke('white');
   rect(game.bounds.x, game.bounds.y, game.bounds.width, game.bounds.height);
 }
 
-function drawBall(game) {
-  fill('black');
+function drawBall(ball) {
+  fill('white');
   noStroke();
-  ellipse(game.ball.position.x, game.ball.position.y, 2 * game.ball.radius);
+  ellipse(ball.position.x, ball.position.y, 2 * ball.radius);
 }
 
 function drawPad(game) {
@@ -143,7 +146,7 @@ function drawPad(game) {
   } else if (keyIsDown(UP_ARROW)) {
     fill('blue');
   } else {
-    fill('black');
+    fill('white');
   }
   noStroke();
   ellipse(game.pad.position.x, game.pad.position.y, 2 * game.pad.radius);
@@ -158,10 +161,13 @@ function drawGameOverHUD(game) {
 function drawGame(game) {
   clear();
   if (game.state == 'GAME_RUNNING') {
-    drawHUD(game);
-    drawBall(game);
     drawBounds(game);
+    for (var i = 0; i < game.balls.length; i++) {
+      var ball = game.balls[i];
+      drawBall(ball);
+    }
     drawPad(game);
+    drawHUD(game);
   } else if (game.state == 'GAME_OVER') {
     drawGameOverHUD(game);
   }
@@ -171,10 +177,6 @@ function drawGame(game) {
 // main p5 callback functions
 function setup() {
   console.log('Welcome to Rong');
-
-  var GAME_BOUNDS_PADDING = 5;
-  var GAME_BOUNDS_WIDTH = 500;
-  var GAME_BOUNDS_HEIGHT = 400;
 
   var initialBallSpeed = 5;
   var initialBallVelocity = p5.Vector.random2D();
@@ -193,13 +195,18 @@ function setup() {
       GAME_BOUNDS_PADDING + (GAME_BOUNDS_WIDTH / 2),
       GAME_BOUNDS_PADDING + (GAME_BOUNDS_HEIGHT / 2)
     ),
-    ball: {
-      mass: 1.0,
-      position: createVector(25, 50),
-      acceleration: createVector(0, 0),
-      velocity: initialBallVelocity,
-      radius: 5
-    },
+    balls: _.times(10, function (n) {
+      return {
+        mass: 1.0,
+        position: createVector(
+          GAME_BOUNDS_PADDING + 5 + (random() * GAME_BOUNDS_WIDTH),
+          GAME_BOUNDS_PADDING + 5 + (random() * GAME_BOUNDS_HEIGHT)
+        ),
+        acceleration: createVector(0, 0),
+        velocity: initialBallVelocity,
+        radius: 5
+      };
+    }),
     pad: {
       mass: 1.0,
       position: createVector(
@@ -213,7 +220,7 @@ function setup() {
     events: []
   };
 
-  createCanvas(canvasWidth, canvasHeight);
+  createCanvas(CANVAS_WIDTH, CANVAS_HEIGHT);
 }
 
 function draw() {
