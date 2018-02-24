@@ -52,7 +52,7 @@ WallHitEvent.prototype.process = function(game) {
       var targetSize = GAME_BOUNDS_HEIGHT * target.size;
       var targetTopMostY = targetCenterY - (targetSize / 2);
       var targetBottomMostY = targetCenterY + (targetSize / 2);
-      if ((targetBottomMostY <= this.ball.position.y) && (this.ball.position.y <= targetTopMostY)) {
+      if ((targetBottomMostY >= this.ball.position.y) && (this.ball.position.y >= targetTopMostY)) {
         updateTargetAfterHit(target, game);
       }
     } else if (target.type === 'TARGET_RIGHT' && this.ball.position.x > game.center.x) {
@@ -60,7 +60,7 @@ WallHitEvent.prototype.process = function(game) {
       var targetSize = GAME_BOUNDS_HEIGHT * target.size;
       var targetTopMostY = targetCenterY - (targetSize / 2);
       var targetBottomMostY = targetCenterY + (targetSize / 2);
-      if ((targetBottomMostY <= this.ball.position.y) && (this.ball.position.y <= targetTopMostY)) {
+      if ((targetBottomMostY >= this.ball.position.y) && (this.ball.position.y >= targetTopMostY)) {
         updateTargetAfterHit(target, game);
       }
     }
@@ -72,7 +72,19 @@ WallHitEvent.prototype.process = function(game) {
 // updating functions
 function updateTargetAfterHit(target, game) {
   console.log('Target hit ("'+target.type+'")');
-  game.score += 50;
+  var targetIndexToBeRemoved = null;
+  for (var i = 0; i < game.targets.length; i++) {
+    if (game.targets[i].id === target.id) {
+      targetIndexToBeRemoved = i;
+      break;
+    }
+  }
+  if (targetIndexToBeRemoved !== null) {
+    game.targets.splice(targetIndexToBeRemoved, 1);
+    game.score += 50;
+  } else {
+    throw('could not find hit target with id = ' + target.id);
+  }
 }
 
 function updateBall(ball, game) {
@@ -257,14 +269,14 @@ function drawTarget(target) {
     var targetCenterX = GAME_BOUNDS_PADDING + GAME_BOUNDS_WIDTH * target.axis;
     var targetSize = GAME_BOUNDS_WIDTH * target.size;
     var targetLeftMostX = targetCenterX - (targetSize / 2);
-    fill('yellow');
+    fill('green');
     noStroke();
     rect(targetLeftMostX, GAME_BOUNDS_PADDING, targetSize, targetThickness);
   } else if (target.type === 'TARGET_BOTTOM') {
     var targetCenterX = GAME_BOUNDS_PADDING + GAME_BOUNDS_WIDTH * target.axis;
     var targetSize = GAME_BOUNDS_WIDTH * target.size;
     var targetLeftMostX = targetCenterX - (targetSize / 2);
-    fill('yellow');
+    fill('green');
     noStroke();
     rect(targetLeftMostX, GAME_BOUNDS_PADDING + GAME_BOUNDS_HEIGHT, targetSize, targetThickness);
   } else if (target.type === 'TARGET_LEFT') {
@@ -272,17 +284,17 @@ function drawTarget(target) {
     var targetSize = GAME_BOUNDS_HEIGHT * target.size;
     var targetTopMostY = targetCenterY - (targetSize / 2);
     var targetBottomMostY = targetCenterY + (targetSize / 2);
-    fill('yellow');
+    fill('green');
     noStroke();
-    rect(targetTopMostY, GAME_BOUNDS_PADDING, targetThickness, targetSize);
+    rect(GAME_BOUNDS_PADDING, targetTopMostY, targetThickness, targetSize);
   } else if (target.type === 'TARGET_RIGHT') {
     var targetCenterY = GAME_BOUNDS_PADDING + GAME_BOUNDS_HEIGHT * target.axis;
     var targetSize = GAME_BOUNDS_HEIGHT * target.size;
     var targetTopMostY = targetCenterY - (targetSize / 2);
     var targetBottomMostY = targetCenterY + (targetSize / 2);
-    fill('yellow');
+    fill('green');
     noStroke();
-    rect(targetTopMostY, GAME_BOUNDS_PADDING + GAME_BOUNDS_WIDTH, targetThickness, targetSize);
+    rect(GAME_BOUNDS_PADDING + GAME_BOUNDS_WIDTH, targetTopMostY, targetThickness, targetSize);
   } else {
     throw('unknown target type: ' + target.type);
   }
@@ -325,12 +337,16 @@ function drawGame(game) {
   }
 }
 
-// var Target = new function(type, opts) {
-//   this.type = type;
-//   this.axis = opts.axis;
-//   this.size = opts.size;
-//   return this;
-// };
+var nextTargetId = 0;
+
+var Target = function(type, opts) {
+  this.id = nextTargetId++;
+  this.type = type;
+  this.axis = opts.axis;
+  this.size = opts.size;
+  return this;
+};
+
 //
 // Target.prototype.centerX = function () {
 //   if (this.type === 'TARGET_TOP') {
@@ -371,7 +387,7 @@ function setup() {
     ),
     acceleration: createVector(0, 0),
     velocity: createVector(0, 0),
-    radius: 2.5
+    radius: 4.5
   });
 
   game = {
@@ -379,11 +395,10 @@ function setup() {
     state: 'GAME_RUNNING',
     score: 0,
     targets: [
-      {
-        type: 'TARGET_TOP',
-        axis: 0.5,
-        size: 0.125
-      }
+      new Target('TARGET_TOP', {axis: 0.5, size: 0.125}),
+      new Target('TARGET_LEFT', {axis: 0.5, size: 0.125}),
+      new Target('TARGET_RIGHT', {axis: 0.5, size: 0.125}),
+      new Target('TARGET_BOTTOM', {axis: 0.5, size: 0.125})
     ],
     bounds: {
       x: GAME_BOUNDS_PADDING,
