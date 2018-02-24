@@ -37,7 +37,7 @@ WallHitEvent.prototype.process = function(game) {
       var targetLeftMostX = targetCenterX - (targetSize / 2);
       var targetRightMostX = targetCenterX + (targetSize / 2);
       if ((targetLeftMostX <= this.ball.position.x) && (this.ball.position.x <= targetRightMostX)) {
-        updateTargetAfterHit(target, game);
+        updateTargetAfterHit(target, this.ball, game);
       }
     } else if (target.type === 'TARGET_BOTTOM' && this.ball.position.y > game.center.y) {
       var targetCenterX = GAME_BOUNDS_PADDING + GAME_BOUNDS_WIDTH * target.axis;
@@ -45,7 +45,7 @@ WallHitEvent.prototype.process = function(game) {
       var targetLeftMostX = targetCenterX - (targetSize / 2);
       var targetRightMostX = targetCenterX + (targetSize / 2);
       if ((targetLeftMostX <= this.ball.position.x) && (this.ball.position.x <= targetRightMostX)) {
-        updateTargetAfterHit(target, game);
+        updateTargetAfterHit(target, this.ball, game);
       }
     } else if (target.type === 'TARGET_LEFT' && this.ball.position.x < game.center.x) {
       var targetCenterY = GAME_BOUNDS_PADDING + GAME_BOUNDS_HEIGHT * target.axis;
@@ -53,7 +53,7 @@ WallHitEvent.prototype.process = function(game) {
       var targetTopMostY = targetCenterY - (targetSize / 2);
       var targetBottomMostY = targetCenterY + (targetSize / 2);
       if ((targetBottomMostY >= this.ball.position.y) && (this.ball.position.y >= targetTopMostY)) {
-        updateTargetAfterHit(target, game);
+        updateTargetAfterHit(target, this.ball, game);
       }
     } else if (target.type === 'TARGET_RIGHT' && this.ball.position.x > game.center.x) {
       var targetCenterY = GAME_BOUNDS_PADDING + GAME_BOUNDS_HEIGHT * target.axis;
@@ -61,7 +61,7 @@ WallHitEvent.prototype.process = function(game) {
       var targetTopMostY = targetCenterY - (targetSize / 2);
       var targetBottomMostY = targetCenterY + (targetSize / 2);
       if ((targetBottomMostY >= this.ball.position.y) && (this.ball.position.y >= targetTopMostY)) {
-        updateTargetAfterHit(target, game);
+        updateTargetAfterHit(target, this.ball, game);
       }
     }
   }
@@ -70,7 +70,7 @@ WallHitEvent.prototype.process = function(game) {
 
 ////////////////////////////////////////////////////////////////////////////////
 // updating functions
-function updateTargetAfterHit(target, game) {
+function updateTargetAfterHit(target, ball, game) {
   console.log('Target hit ("'+target.type+'")');
   var targetIndexToBeRemoved = null;
   for (var i = 0; i < game.targets.length; i++) {
@@ -81,7 +81,27 @@ function updateTargetAfterHit(target, game) {
   }
   if (targetIndexToBeRemoved !== null) {
     game.targets.splice(targetIndexToBeRemoved, 1);
-    game.score += 50;
+    var SCORE_BASE = 50;
+    var SCORE_SPEED_BONUS = 20;
+    var SCORE_TIME_BONUS = 30;
+    var targetHitPointsWorth =
+      SCORE_BASE +
+      (SCORE_SPEED_BONUS * p5.Vector.mag(ball.velocity)) +
+      SCORE_TIME_BONUS;
+    game.score += Math.round(targetHitPointsWorth);
+    if (game.targets.length === 0) {
+      game.level += 1;
+      _.each(['TARGET_TOP', 'TARGET_LEFT', 'TARGET_RIGHT', 'TARGET_BOTTOM'], function (type) {
+        var size = 0.1 + (0.15 * (1 / game.level));
+        var total = ((type === 'TARGET_TOP') || (type === 'TARGET_BOTTOM')) ?
+                    GAME_BOUNDS_WIDTH : GAME_BOUNDS_HEIGHT ;
+        var target = new Target(type, {
+          size: size,
+          axis: (size / 2) + (random() * (total - size))
+        });
+        game.targets.push(target);
+      });
+    }
   } else {
     throw('could not find hit target with id = ' + target.id);
   }
@@ -391,6 +411,7 @@ function setup() {
   });
 
   game = {
+    level: 1,
     events: [],
     state: 'GAME_RUNNING',
     score: 0,
