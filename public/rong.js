@@ -90,14 +90,13 @@ function updateTargetAfterHit(target, ball, game) {
       SCORE_TIME_BONUS;
     game.score += Math.round(targetHitPointsWorth);
     if (game.targets.length === 0) {
+      console.log('New level');
       game.level += 1;
       _.each(['TARGET_TOP', 'TARGET_LEFT', 'TARGET_RIGHT', 'TARGET_BOTTOM'], function (type) {
         var size = 0.1 + (0.15 * (1 / game.level));
-        var total = ((type === 'TARGET_TOP') || (type === 'TARGET_BOTTOM')) ?
-                    GAME_BOUNDS_WIDTH : GAME_BOUNDS_HEIGHT ;
         var target = new Target(type, {
           size: size,
-          axis: (size / 2) + (random() * (total - size))
+          axis: (size / 2) + (random() * (1.0 - size))
         });
         game.targets.push(target);
       });
