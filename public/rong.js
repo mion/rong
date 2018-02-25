@@ -347,7 +347,7 @@ function drawBall(ball) {
   // draw velocity vector
   if (ball.type === 'player') {
     stroke('gray');
-    var CONST = 2.0;
+    var CONST = 4.0;
     var pos = ball.position;
     var vel = ball.velocity;
     var head = p5.Vector.add(pos, p5.Vector.mult(vel, CONST));
