@@ -94,7 +94,7 @@ function onHitComboCounterIncrease(points, target, ball, game) {
   game.events.push(new ScoreEvent({
     points: points,
     target: target,
-    delayMs: 1000,
+    delayMs: 750,
     x: target.centerX,
     y: target.centerY,
   }));
@@ -509,7 +509,7 @@ function drawTail(game) {
 
 function drawEvent(event) {
   if (event.type === 'SCORE_EVENT') {
-    textSize(11 + Math.round(4 * Math.pow(1 + event.percentage(), 1.25)));
+    textSize(8 + Math.round(4 * Math.pow(1 + event.percentage(), 1.25)));
     var prefix = '';
     var dirH = 0;
     var dirV = 0;
@@ -530,7 +530,7 @@ function drawEvent(event) {
     }
 
     var textString = prefix + Math.round(
-      (event.percentage() > 0.40) ?
+      (event.percentage() > 0.30) ?
         event.points :
         (event.points * Math.pow(1.0 + event.percentage(), 2))
     );
@@ -540,7 +540,7 @@ function drawEvent(event) {
       console.log(textX+','+textY + ' => ' + textString);
     }
 
-    fill('red');
+    fill('gray');
     noStroke();
     text(
       textString,
