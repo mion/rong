@@ -9,18 +9,55 @@
 
 ////////////////////////////////////////////////////////////////////////////////
 // configuration
-var game = null;
-var tail = [];
-var sounds = {};
 var CANVAS_HEIGHT = 600;
 var CANVAS_WIDTH = 600;
 var GAME_BOUNDS_PADDING = 5;
 var GAME_BOUNDS_WIDTH = CANVAS_WIDTH - 2*GAME_BOUNDS_PADDING;
 var GAME_BOUNDS_HEIGHT = CANVAS_HEIGHT - 2*GAME_BOUNDS_PADDING;
+var GAME_GRAVITY_CONSTANT = 37.0;
+var BALL_SPEED_BONUS_MULTIPLIER_AFTER_HIT_TARGET = 0.20; // 20%
+var BALL_ARROW_SIZE_CONSTANT = 20.0;
+var BALL_ARROW_HEAD_CONSTANT = 7.0;
 var TAIL_SIZE = 5;
+var TAIL_DELAY_MS = 50;
+var TAIL_RADIUS = 5.0;
+
+var game = null;
+var tail = new Array(TAIL_SIZE);
+var sounds = {};
+var playerBall = null;
 
 ////////////////////////////////////////////////////////////////////////////////
 // prototypes
+
+var ScoreEvent = function(opts) {
+  this.type = 'SCORE_EVENT';
+  this.text = opts.text;
+  this.x = opts.x;
+  this.y = opts.y;
+  this.timeStartedAt = (new Date()).getTime();
+  this.timeToLiveMs = opts.delayMs;
+  this.counter = 0;
+  return this;
+};
+
+ScoreEvent.prototype.timeAlive = function () {
+  var currentTime = (new Date()).getTime();
+  return currentTime - this.timeStartedAt;
+};
+
+ScoreEvent.prototype.shouldBeDead = function () {
+  return this.timeAlive() > this.timeToLiveMs;
+};
+
+ScoreEvent.prototype.process = function (game) {
+  if (this.shouldBeDead()) {
+    return true;
+  } else {
+    this.counter += 1;
+    return false;
+  }
+};
 
 var WallHitEvent = function(opts) {
   this.type = 'WALL_HIT_EVENT';
@@ -42,11 +79,17 @@ function playWallHitSound() {
 function playLevelUpSound() {
 }
 
-function onHitComboCounterIncrease(game) {
+function onHitComboCounterIncrease(target, ball, game) {
   game.hitComboCounter += 1;
+  game.events.push(new ScoreEvent({
+    text: '+score',
+    delayMs: 1000,
+    x: ball.position.x,
+    y: ball.position.y,
+  }));
 }
 
-function onHitComboCounterDecrease(game) {
+function onHitComboCounterDecrease(target, ball, game) {
   game.hitComboCounter -= 1;
 }
 
@@ -62,10 +105,10 @@ WallHitEvent.prototype.process = function(game) {
       var targetRightMostX = targetCenterX + (targetSize / 2);
       if ((targetLeftMostX <= this.ball.position.x) && (this.ball.position.x <= targetRightMostX)) {
         updateTargetAfterHit(target, this.ball, game);
-        onHitComboCounterIncrease(game);
+        onHitComboCounterIncrease(target, this.ball, game);
         playTargetHitSound();
       } else {
-        onHitComboCounterDecrease(game);
+        onHitComboCounterDecrease(target, this.ball, game);
         playWallHitSound();
       }
     } else if (target.type === 'TARGET_BOTTOM' && this.ball.position.y > game.center.y) {
@@ -75,10 +118,10 @@ WallHitEvent.prototype.process = function(game) {
       var targetRightMostX = targetCenterX + (targetSize / 2);
       if ((targetLeftMostX <= this.ball.position.x) && (this.ball.position.x <= targetRightMostX)) {
         updateTargetAfterHit(target, this.ball, game);
-        onHitComboCounterIncrease(game);
+        onHitComboCounterIncrease(target, this.ball, game);
         playTargetHitSound();
       } else {
-        onHitComboCounterDecrease(game);
+        onHitComboCounterDecrease(target, this.ball, game);
         playWallHitSound();
       }
     } else if (target.type === 'TARGET_LEFT' && this.ball.position.x < game.center.x) {
@@ -88,10 +131,10 @@ WallHitEvent.prototype.process = function(game) {
       var targetBottomMostY = targetCenterY + (targetSize / 2);
       if ((targetBottomMostY >= this.ball.position.y) && (this.ball.position.y >= targetTopMostY)) {
         updateTargetAfterHit(target, this.ball, game);
-        onHitComboCounterIncrease(game);
+        onHitComboCounterIncrease(target, this.ball, game);
         playTargetHitSound();
       } else {
-        onHitComboCounterDecrease(game);
+        onHitComboCounterDecrease(target, this.ball, game);
         playWallHitSound();
       }
     } else if (target.type === 'TARGET_RIGHT' && this.ball.position.x > game.center.x) {
@@ -101,10 +144,10 @@ WallHitEvent.prototype.process = function(game) {
       var targetBottomMostY = targetCenterY + (targetSize / 2);
       if ((targetBottomMostY >= this.ball.position.y) && (this.ball.position.y >= targetTopMostY)) {
         updateTargetAfterHit(target, this.ball, game);
-        onHitComboCounterIncrease(game);
+        onHitComboCounterIncrease(target, this.ball, game);
         playTargetHitSound();
       } else {
-        onHitComboCounterDecrease(game);
+        onHitComboCounterDecrease(target, this.ball, game);
         playWallHitSound();
       }
     }
@@ -116,6 +159,7 @@ WallHitEvent.prototype.process = function(game) {
 // updating functions
 function updateTargetAfterHit(target, ball, game) {
   console.log('Target hit ("'+target.type+'")');
+  ball.velocity.mult(1 + BALL_SPEED_BONUS_MULTIPLIER_AFTER_HIT_TARGET);
   var targetIndexToBeRemoved = null;
   for (var i = 0; i < game.targets.length; i++) {
     if (game.targets[i].id === target.id) {
@@ -158,7 +202,6 @@ function updateTargetAfterHit(target, ball, game) {
 function updateBall(ball, game) {
   var pad = game.pad;
   var bounds = game.bounds;
-  var GAME_GRAVITY_CONSTANT = 80.0;
 
   if (keyIsDown(DOWN_ARROW)) {
     var direction = p5.Vector.sub(pad.position, ball.position);
@@ -291,10 +334,10 @@ function updateGame(game) {
     updateBall(ball, game);
   }
 
-  // for (var i = 0; i < game.targets.length; i++) {
-  //   var target = game.targets[i];
-  //   updateTarget(target, game);
-  // }
+  // var idx = currentTailIndex++;
+  // var t = tail[idx];
+  // t.x = playerBall.position.x;
+  // t.y = playerBall.position.y;
 
   updatePad(game);
 }
@@ -329,9 +372,6 @@ function drawHUD(game) {
     GAME_BOUNDS_PADDING + (HUD_PADDING / 2),
     3 * (HUD_TEXT_SIZE * GOLDEN_RATIO) + GAME_BOUNDS_PADDING + HUD_PADDING
   );
-  var playerBall = _.filter(game.balls, function (ball) {
-    return ball.type === 'player';
-  })[0];
   text(
     "SPEED " + Math.round(playerBall.velocity.mag()),
     GAME_BOUNDS_PADDING + (HUD_PADDING / 2),
@@ -349,14 +389,17 @@ function drawBall(ball) {
   // draw velocity vector
   if (ball.type === 'player') {
     stroke('gray');
-    var CONST = 10.0;
     var pos = ball.position;
     var vel = ball.velocity;
-    var head = p5.Vector.add(pos, p5.Vector.mult(vel, CONST));
+    var head = p5.Vector.add(pos, p5.Vector.mult(vel, BALL_ARROW_SIZE_CONSTANT));
     var left = vel.copy();
+    left.normalize();
+    left.mult(BALL_ARROW_HEAD_CONSTANT);
     left.rotate(-(3/4)*PI);
     left.add(head);
     var right = vel.copy();
+    right.normalize();
+    right.mult(BALL_ARROW_HEAD_CONSTANT);
     right.rotate(+(3/4)*PI);
     right.add(head);
 
@@ -373,6 +416,7 @@ function drawBall(ball) {
   noStroke();
   ellipse(ball.position.x, ball.position.y, 2 * ball.radius);
   // draw the tail
+  /*
   if (tail.length >= TAIL_SIZE) {
     tail.shift();
   }
@@ -383,6 +427,7 @@ function drawBall(ball) {
     stroke('white');
     ellipse(point.x, point.y, 2.0);
   }
+  */
 }
 
 function drawTarget(target) {
@@ -419,11 +464,18 @@ function drawTarget(target) {
 function drawPad(game) {
   if (keyIsDown(DOWN_ARROW)) {
     fill('orange');
+    stroke('orange');
+    line(game.pad.position.x, game.pad.position.y, playerBall.position.x, playerBall.position.y);
   } else if (keyIsDown(UP_ARROW)) {
     fill('purple');
+    stroke('purple');
+    line(game.pad.position.x, game.pad.position.y, playerBall.position.x, playerBall.position.y);
   } else {
-    fill('white');
+    fill('gray');
+    stroke('rgba(255, 255, 255, 0.15)');
+    line(game.pad.position.x, game.pad.position.y, playerBall.position.x, playerBall.position.y);
   }
+  fill('white');
   noStroke();
   ellipse(game.pad.position.x, game.pad.position.y, 2 * game.pad.radius);
 }
@@ -434,20 +486,45 @@ function drawGameOverHUD(game) {
   text('GAME OVER', game.center.x, game.center.y);
 }
 
+function drawTail(game) {
+  for (var i = 0; i < tail.length; i++) {
+    fill('white');
+    noStroke();
+    ellipse(tail[i].x, tail[i].y, TAIL_RADIUS);
+  }
+}
+
+function drawEvent(event) {
+  if (event.type === 'SCORE_EVENT') {
+    fill('green');
+    textSize(13);
+    noStroke();
+    text(event.text, event.x, event.y);
+  }
+}
+
 function drawGame(game) {
   clear();
   if (game.state == 'GAME_RUNNING') {
     drawBounds(game);
     for (var i = 0; i < game.balls.length; i++) {
       var ball = game.balls[i];
-      drawBall(ball);
+      if (ball !== playerBall) {
+        drawBall(ball);
+      }
     }
+    drawTail(game);
     drawPad(game);
+    drawBall(playerBall);
     for (var i = 0; i < game.targets.length; i++) {
       var target = game.targets[i];
       drawTarget(target);
     }
     drawHUD(game);
+    for (var i = 0; i < game.events.length; i++) {
+      var event = game.events[i];
+      drawEvent(event);
+    }
   } else if (game.state == 'GAME_OVER') {
     drawGameOverHUD(game);
   }
@@ -489,7 +566,17 @@ function setup() {
   var initialBallVelocity = p5.Vector.random2D();
   initialBallVelocity.mult(initialBallSpeed);
 
-
+  playerBall = {
+    type: 'player',
+    mass: 0.2,
+    position: createVector(
+      GAME_BOUNDS_WIDTH * random(),
+      GAME_BOUNDS_HEIGHT * random()
+    ),
+    acceleration: createVector(0, 0),
+    velocity: createVector(0, 0),
+    radius: 3.5
+  };
   var balls = _.times(200, function (n) {
     return {
       type: 'decoration',
@@ -505,17 +592,11 @@ function setup() {
       ),
       radius: 0.5 + random() * 1.0
     };
-  }).concat({
-    type: 'player',
-    mass: 0.2,
-    position: createVector(
-      GAME_BOUNDS_WIDTH * random(),
-      GAME_BOUNDS_HEIGHT * random()
-    ),
-    acceleration: createVector(0, 0),
-    velocity: createVector(0, 0),
-    radius: 3.5
-  });
+  }).concat(playerBall);
+
+  for (var i = 0; i < TAIL_SIZE; i++) {
+    tail[i] = {x: 0, y: 0};
+  }
 
   game = {
     level: 1,
@@ -556,6 +637,10 @@ function setup() {
   };
 
   createCanvas(CANVAS_WIDTH, CANVAS_HEIGHT);
+
+  setInterval(function() {
+
+  }, TAIL_DELAY_MS);
 }
 
 function draw() {
