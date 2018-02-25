@@ -15,12 +15,12 @@ var GAME_BOUNDS_PADDING = 5;
 var GAME_BOUNDS_WIDTH = CANVAS_WIDTH - 2*GAME_BOUNDS_PADDING;
 var GAME_BOUNDS_HEIGHT = CANVAS_HEIGHT - 2*GAME_BOUNDS_PADDING;
 var GAME_GRAVITY_CONSTANT = 37.0;
-var BALL_SPEED_BONUS_MULTIPLIER_AFTER_HIT_TARGET = 0.05;
-var BALL_SPEED_WALL_DAMPING_MULTIPLIER = 0.75;
+var BALL_SPEED_BONUS_MULTIPLIER_AFTER_HIT_TARGET = 0.85;
+var BALL_SPEED_WALL_DAMPING_MULTIPLIER = 0.95;
 var BALL_ARROW_SIZE_CONSTANT = 20.0;
 var BALL_ARROW_HEAD_CONSTANT = 7.0;
-var PAD_MASS_INCREASE_MULTIPLIER = 0.10;
-var PAD_RADIUS_INCREASE_MULTIPLIER = 0.10;
+var PAD_MASS_INCREASE_MULTIPLIER = 0.05;
+var PAD_RADIUS_INCREASE_MULTIPLIER = 0.05;
 var TAIL_SIZE = 5;
 var TAIL_DELAY_MS = 50;
 var TAIL_RADIUS = 5.0;
@@ -35,17 +35,41 @@ var playerBall = null;
 // prototypes
 
 function targetSizeForLevel(level) {
-  return 0.5 * Math.pow(0.9, level);
+  return 0.75 * Math.pow(0.975, level);
 }
 
 var ExplosionEvent = function(opts) {
   this.type = 'EXPLOSION_EVENT';
-  this.origin = {
-    x: opts.x,
-    y: opts.y
-  };
+  this.x = opts.x;
+  this.y = opts.y;
   this.energy = opts.energy;
   this.particles = [];
+  this.timeStartedAt = (new Date()).getTime();
+  this.timeToLiveMs = opts.delayMs;
+  this.counter = 0;
+  return this;
+};
+
+ExplosionEvent.prototype.percentage = function () {
+  return (this.timeAlive() / this.timeToLiveMs);
+};
+
+ExplosionEvent.prototype.timeAlive = function () {
+  var currentTime = (new Date()).getTime();
+  return currentTime - this.timeStartedAt;
+};
+
+ExplosionEvent.prototype.shouldBeDead = function () {
+  return this.timeAlive() > this.timeToLiveMs;
+};
+
+ExplosionEvent.prototype.process = function (game) {
+  if (this.shouldBeDead()) {
+    return true;
+  } else {
+    this.counter += 1;
+    return false;
+  }
 };
 
 var ScoreEvent = function(opts) {
@@ -228,7 +252,7 @@ WallHitEvent.prototype.process = function(game) {
 // updating functions
 function updateTargetAfterHit(target, ball, game) {
   console.log('Target hit ("'+target.type+'")');
-  ball.velocity.mult(1 + BALL_SPEED_BONUS_MULTIPLIER_AFTER_HIT_TARGET);
+  ball.velocity.mult(BALL_SPEED_BONUS_MULTIPLIER_AFTER_HIT_TARGET);
   var targetIndexToBeRemoved = null;
   for (var i = 0; i < game.targets.length; i++) {
     if (game.targets[i].id === target.id) {
@@ -247,7 +271,7 @@ function updateTargetAfterHit(target, ball, game) {
     var targetHitPointsWorth =
       SCORE_BASE +
       (SCORE_SPEED_BONUS * p5.Vector.mag(ball.velocity)) +
-      (SCORE_TIME_BONUS * (1 / timeElapsedSeconds * SCORE_TIME_CONSTANT));
+      (SCORE_TIME_BONUS * (1 / (1 + timeElapsedSeconds) * SCORE_TIME_CONSTANT));
     game.score += Math.round(targetHitPointsWorth);
     if (game.targets.length === 0) {
       console.log('level up');
@@ -519,7 +543,7 @@ function drawBall(ball) {
 
 function drawTarget(target) {
   var targetThickness = 5;
-  fill('red');
+  fill('yellow');
   noStroke();
   if (target.type === 'TARGET_TOP') {
     var targetCenterX = GAME_BOUNDS_PADDING + GAME_BOUNDS_WIDTH * target.axis;
@@ -549,11 +573,11 @@ function drawTarget(target) {
 }
 
 function drawPad(game) {
-  if (keyIsDown(DOWN_ARROW)) {
+  if (keyIsDown(SHIFT)) {
     fill('orange');
     stroke('orange');
     line(game.pad.position.x, game.pad.position.y, playerBall.position.x, playerBall.position.y);
-  } else if (keyIsDown(UP_ARROW)) {
+  } else if (keyIsDown(ESCAPE)) {
     fill('purple');
     stroke('purple');
     line(game.pad.position.x, game.pad.position.y, playerBall.position.x, playerBall.position.y);
@@ -569,9 +593,14 @@ function drawPad(game) {
 
 function drawGameOverHUD(game) {
   textSize(32);
-  fill('black');
+  fill('white');
+  noStroke();
   textFont(fonts.VT323);
   text('GAME OVER', game.center.x, game.center.y);
+  textSize(48);
+  fill('rgba(200,255,25,0.9)');
+  noStroke();
+  text(game.score + ' pts.', game.center.x, 48 + game.center.y);
 }
 
 function drawTail(game) {
