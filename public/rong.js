@@ -38,50 +38,97 @@ var maximumKinecticEnergy = 1.0;
 ////////////////////////////////////////////////////////////////////////////////
 // prototypes
 
-var _percentage = function (obj) {
-  return (_timeAlive(obj) / obj.timeToLiveMs);
+/* GameEvent
+    The base class for all events. */
+var GameEvent = function (opts) {
+  this.initialize('GAME_EVENT', opts);
+  return this;
 };
 
-var _timeAlive = function (obj) {
+GameEvent.prototype.initialize = function (type, opts) {
+  this.type = type;
+  this.x = opts.x || 0;
+  this.y = opts.y || 0;
+  this.timeToLiveMs = opts.timeToLiveMs || 1000;
+  this.timeStartedAt = (new Date()).getTime();
+  this.counter = 0;
+};
+
+GameEvent.prototype.percentage = function () {
+  return (this.timeAlive() / this.timeToLiveMs);
+};
+
+GameEvent.prototype.timeAlive = function () {
   var currentTime = (new Date()).getTime();
-  return currentTime - obj.createdAt;
+  return currentTime - this.timeStartedAt;
 };
 
-// var nextParticleId = 1;
-// var Particle = function(opts) {
-//   this.id = nextParticleId++;
-//   this.position = createVector(opts.x, opts.y);
-//   return this;
-// };
+GameEvent.prototype.shouldBeDead = function () {
+  return this.timeAlive() > this.timeToLiveMs;
+};
 
+GameEvent.prototype.update = function (game) {
+  if (this.shouldBeDead()) {
+    return true;
+  } else {
+    this.counter += 1;
+    return false;
+  }
+};
+
+GameEvent.prototype.process = function (game) {
+  return;
+};
+
+GameEvent.prototype.draw = function (game) {
+  return;
+};
+
+/* BonusEvent
+    Created when a new bonus should be displayed on the screen.
+*/
+var BonusEvent = function (opts) {
+  this.initialize('BONUS_EVENT', opts);
+  this.message = opts.message;
+  this.fillColor = opts.fillColor;
+  this.initial = {
+    size: opts.initial.size,
+    position: opts.initial.position
+  };
+  this.final = {
+    size: opts.final.size,
+    position: opts.final.position
+  };
+  this.curve = opts.curve;
+  return this;
+};
+
+BonusEvent.prototype = GameEvent;
+
+BonusEvent.prototype.shouldBeRemoved = function (game) {
+  return true;
+};
+
+BonusEvent.prototype.draw = function (game) {
+  var delta = this.final.size - this.initial.size;
+  textSize(this.initial.size + (this.percentage() * delta));
+  fill(this.color);
+  noStroke();
+  text(this.message, this.x, this.y);
+};
+
+// TODO move to Target proto
 function targetSizeForLevel(level) {
   return 0.65 * Math.pow(0.9, level);
 }
 
 var ExplosionEvent = function(opts) {
-  this.type = 'EXPLOSION_EVENT';
-  this.x = opts.x;
-  this.y = opts.y;
+  this.initialize('EXPLOSION_EVENT', opts);
   this.energy = opts.energy;
-  this.timeToLiveMs = opts.timeToLiveMs;
-  this.particles = [];
-  this.timeStartedAt = (new Date()).getTime();
-  this.counter = 0;
   return this;
 };
 
-ExplosionEvent.prototype.percentage = function () {
-  return (this.timeAlive() / this.timeToLiveMs);
-};
-
-ExplosionEvent.prototype.timeAlive = function () {
-  var currentTime = (new Date()).getTime();
-  return currentTime - this.timeStartedAt;
-};
-
-ExplosionEvent.prototype.shouldBeDead = function () {
-  return this.timeAlive() > this.timeToLiveMs;
-};
+ExplosionEvent.prototype = GameEvent;
 
 ExplosionEvent.prototype.process = function (game) {
   var ttl = this.timeToLiveMs;
@@ -110,46 +157,26 @@ ExplosionEvent.prototype.process = function (game) {
   return true;
 };
 
-var ScoreEvent = function(opts) {
-  this.type = 'SCORE_EVENT';
+/* ScoreEvent
+    Whenever the player hits a target.
+*/
+var ScoreEvent = function (opts) {
+  this.initialize('SCORE_EVENT', opts);
   this.points = opts.points;
   this.target = opts.target;
-  this.x = opts.x;
-  this.y = opts.y;
-  this.timeStartedAt = (new Date()).getTime();
-  this.timeToLiveMs = opts.delayMs;
-  this.counter = 0;
   return this;
 };
 
-ScoreEvent.prototype.percentage = function () {
-  return (this.timeAlive() / this.timeToLiveMs);
-};
+ScoreEvent.prototype = GameEvent;
 
-ScoreEvent.prototype.timeAlive = function () {
-  var currentTime = (new Date()).getTime();
-  return currentTime - this.timeStartedAt;
-};
-
-ScoreEvent.prototype.shouldBeDead = function () {
-  return this.timeAlive() > this.timeToLiveMs;
-};
-
-ScoreEvent.prototype.process = function (game) {
-  if (this.shouldBeDead()) {
-    return true;
-  } else {
-    this.counter += 1;
-    return false;
-  }
-};
-
-var WallHitEvent = function(opts) {
-  this.type = 'WALL_HIT_EVENT';
+var WallHitEvent = function (opts) {
+  this.initialize('WALL_HIT_EVENT', opts);
   this.wall = opts.wall;
   this.ball = opts.ball;
   return this;
-}
+};
+
+WallHitEvent.prototype = GameEvent;
 
 function playTargetHitSound() {
   sounds.targetHit.setVolume(0.75);
