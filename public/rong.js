@@ -99,6 +99,29 @@ function playGameOverSound() {
   sounds.gameOver.play();
 }
 
+var objs = [
+  {
+    start: 0,
+    end: 3,
+    loopIndex: 0,
+  },
+  {
+    start: 4,
+    end: 7,
+    loopIndex: 1,
+  },
+  {
+    start: 8,
+    end: 11,
+    loopIndex: 2,
+  },
+  {
+    start: 12,
+    end: 15,
+    loopIndex: 3,
+  }
+];
+
 function onHitComboCounterIncrease(points, target, ball, game) {
   game.hitComboCounter += 1;
   // console.log('points: ' + points);
@@ -109,10 +132,24 @@ function onHitComboCounterIncrease(points, target, ball, game) {
     x: target.centerX,
     y: target.centerY,
   }));
+  _.each(objs, function (obj) {
+    if ((game.hitComboCounter >= obj.start) && (game.hitComboCounter <= obj.end)) {
+      sounds.loop[obj.loopIndex].setVolume(0.5);
+    } else {
+      sounds.loop[obj.loopIndex].setVolume(0.0);
+    }
+  });
 }
 
 function onHitComboCounterDecrease(target, ball, game) {
   game.hitComboCounter -= 1;
+  _.each(objs, function (obj) {
+    if ((game.hitComboCounter >= obj.start) && (game.hitComboCounter <= obj.end)) {
+      sounds.loop[obj.loopIndex].setVolume(0.5);
+    } else {
+      sounds.loop[obj.loopIndex].setVolume(0.0);
+    }
+  });
 }
 
 WallHitEvent.prototype.process = function(game) {
@@ -629,9 +666,16 @@ function preload() {
   console.log('preload...');
   soundFormats('mp3', 'wav');
   sounds.wallHit = loadSound('sounds/ball2.wav');
-  sounds.targetHit = loadSound('sounds/game1.mp3');
+  sounds.wallHitStronger = loadSound('sounds/rong_wall_hit.mp3');
+  sounds.targetHit = loadSound('sounds/rong_target_hit.mp3');
   sounds.gameOver = loadSound('sounds/game_over1.wav');
-  sounds.levelUp = loadSound('sounds/game6.wav');
+  sounds.levelUp = loadSound('sounds/rong_target_hit_level_up.mp3');
+  sounds.loop = [
+    loadSound('sounds/loop_1.mp3'),
+    loadSound('sounds/loop_2.mp3'),
+    loadSound('sounds/loop_3.mp3'),
+    loadSound('sounds/loop_4.mp3')
+  ];
   fonts.VT323 = loadFont('fonts/VT323-Regular.ttf');
   fonts.Bungee = loadFont('fonts/Bungee.ttf');
   console.log('done!');
@@ -639,6 +683,12 @@ function preload() {
 
 function setup() {
   console.log('setup');
+
+  for (var i = 0; i < sounds.loop.length; i++) {
+    sounds.loop[i].setVolume(0.0);
+    sounds.loop[i].setLoop(true);
+    sounds.loop[i].loop();
+  }
 
   var initialBallSpeed = 5*random();
   var initialBallVelocity = p5.Vector.random2D();
