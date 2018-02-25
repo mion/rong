@@ -87,6 +87,13 @@ function playWallHitSound() {
 }
 
 function playLevelUpSound() {
+  sounds.levelUp.setVolume(0.75);
+  sounds.levelUp.play();
+}
+
+function playGameOverSound() {
+  sounds.gameOver.setVolume(0.50);
+  sounds.gameOver.play();
 }
 
 function onHitComboCounterIncrease(points, target, ball, game) {
@@ -275,6 +282,7 @@ function updateBall(ball, game) {
     var minimumDistanceForCollision = ball.radius + pad.radius;
     if (distanceToPad < minimumDistanceForCollision) {
       game.state = 'GAME_OVER';
+      playGameOverSound();
     }
   }
 }
@@ -498,6 +506,7 @@ function drawPad(game) {
 function drawGameOverHUD(game) {
   textSize(32);
   fill('black');
+  textFont(fonts.VT323);
   text('GAME OVER', game.center.x, game.center.y);
 }
 
@@ -511,7 +520,7 @@ function drawTail(game) {
 
 function drawEvent(event) {
   if (event.type === 'SCORE_EVENT') {
-    textSize(8 + Math.round(4 * Math.pow(1 + event.percentage(), 1.25)));
+    textSize(11 + Math.round(4 * Math.pow(1 + event.percentage(), 1.25)));
     var prefix = '';
     var dirH = 0;
     var dirV = 0;
@@ -542,9 +551,9 @@ function drawEvent(event) {
       console.log(textX+','+textY + ' => ' + textString);
     }
 
-    stroke('rgba(255,255,128,0.85)');
-    fill('black');
-    textFont(fonts.Bungee);
+    fill('rgba(200,255,0,0.95)');
+    stroke('green');
+    textFont(fonts.VT323);
     // fill('rgba(255,255,128,0.85)');
     // text(
     //   textString,
