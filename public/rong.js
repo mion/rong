@@ -10,12 +10,14 @@
 ////////////////////////////////////////////////////////////////////////////////
 // configuration
 var game = null;
+var tail = [];
 var sounds = {};
 var CANVAS_HEIGHT = 600;
 var CANVAS_WIDTH = 600;
 var GAME_BOUNDS_PADDING = 5;
 var GAME_BOUNDS_WIDTH = CANVAS_WIDTH - 2*GAME_BOUNDS_PADDING;
 var GAME_BOUNDS_HEIGHT = CANVAS_HEIGHT - 2*GAME_BOUNDS_PADDING;
+var TAIL_SIZE = 5;
 
 ////////////////////////////////////////////////////////////////////////////////
 // prototypes
@@ -370,6 +372,17 @@ function drawBall(ball) {
   }
   noStroke();
   ellipse(ball.position.x, ball.position.y, 2 * ball.radius);
+  // draw the tail
+  if (tail.length >= TAIL_SIZE) {
+    tail.shift();
+  }
+  tail.push(createVector(ball.position.x, ball.position.y));
+  for (var i = 0; i < tail.length; i++) {
+    var point = tail[i];
+    fill('blue');
+    stroke('white');
+    ellipse(point.x, point.y, 2.0);
+  }
 }
 
 function drawTarget(target) {
@@ -476,6 +489,7 @@ function setup() {
   var initialBallVelocity = p5.Vector.random2D();
   initialBallVelocity.mult(initialBallSpeed);
 
+
   var balls = _.times(200, function (n) {
     return {
       type: 'decoration',
@@ -505,6 +519,7 @@ function setup() {
 
   game = {
     level: 1,
+    tailSize: TAIL_SIZE,
     timeLevelStartedAt: (new Date()).getTime(),
     hitComboCounter: 0,
     events: [],
