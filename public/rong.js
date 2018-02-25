@@ -33,6 +33,7 @@ var tail = new Array(TAIL_SIZE);
 var sounds = {};
 var fonts = {};
 var playerBall = null;
+var maximumKinecticEnergy = 1.0;
 
 ////////////////////////////////////////////////////////////////////////////////
 // prototypes
@@ -550,7 +551,7 @@ function drawBall(ball) {
   // draw velocity vector
   if (ball.type === 'player') {
     if (keyIsDown(ESCAPE) || keyIsDown(SHIFT)) {
-      stroke('gray');
+      stroke('rgba(255,255,255,0.75)');
     } else {
       noStroke();
     }
@@ -588,7 +589,31 @@ function drawBall(ball) {
   }
 
   noStroke();
-  ellipse(ball.position.x, ball.position.y, 2 * ball.radius);
+  if (ball.type === 'player') {
+    // var KINECTIC_CONSTANT = 0.10;
+    var kineticEnergy =
+      playerBall.mass *
+      Math.pow(playerBall.velocity.mag(), 2);
+    if (kineticEnergy > maximumKinecticEnergy) {
+      maximumKinecticEnergy = kineticEnergy;
+    }
+    var K = kineticEnergy / maximumKinecticEnergy;
+
+    var power = K * 55;
+    var r = Math.round(200 + power);
+    var g = Math.round(50 + power);
+    var b = Math.round(power);
+    strokeWeight(1 + K * 3);
+    stroke(`rgba(${r},${g},${b},${K})`);
+
+    ellipse(
+      ball.position.x,
+      ball.position.y,
+      (2 * ball.radius) + (K * 3)
+    );
+  } else {
+    ellipse(ball.position.x, ball.position.y, 2 * ball.radius);
+  }
   // draw the tail
   /*
   if (tail.length >= TAIL_SIZE) {
