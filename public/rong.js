@@ -10,6 +10,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 // configuration
 var game = null;
+var sounds = {};
 var CANVAS_HEIGHT = 600;
 var CANVAS_WIDTH = 600;
 var GAME_BOUNDS_PADDING = 5;
@@ -26,6 +27,27 @@ var WallHitEvent = function(opts) {
   return this;
 }
 
+function playTargetHitSound() {
+  sounds.targetHit.setVolume(0.5);
+  sounds.targetHit.play();
+}
+
+function playWallHitSound() {
+  sounds.wallHit.setVolume(0.25);
+  sounds.wallHit.play();
+}
+
+function playLevelUpSound() {
+}
+
+function onHitComboCounterIncrease(game) {
+  game.hitComboCounter += 1;
+}
+
+function onHitComboCounterDecrease(game) {
+  game.hitComboCounter -= 1;
+}
+
 WallHitEvent.prototype.process = function(game) {
   console.log('This ball hit the ' + this.wall + ' wall: ', this.ball);
   var hitTargetIndex = null;
@@ -38,9 +60,11 @@ WallHitEvent.prototype.process = function(game) {
       var targetRightMostX = targetCenterX + (targetSize / 2);
       if ((targetLeftMostX <= this.ball.position.x) && (this.ball.position.x <= targetRightMostX)) {
         updateTargetAfterHit(target, this.ball, game);
-        game.hitComboCounter += 1;
+        onHitComboCounterIncrease(game);
+        playTargetHitSound();
       } else {
-        game.hitComboCounter = 0 ;
+        onHitComboCounterDecrease(game);
+        playWallHitSound();
       }
     } else if (target.type === 'TARGET_BOTTOM' && this.ball.position.y > game.center.y) {
       var targetCenterX = GAME_BOUNDS_PADDING + GAME_BOUNDS_WIDTH * target.axis;
@@ -49,9 +73,11 @@ WallHitEvent.prototype.process = function(game) {
       var targetRightMostX = targetCenterX + (targetSize / 2);
       if ((targetLeftMostX <= this.ball.position.x) && (this.ball.position.x <= targetRightMostX)) {
         updateTargetAfterHit(target, this.ball, game);
-        game.hitComboCounter += 1;
+        onHitComboCounterIncrease(game);
+        playTargetHitSound();
       } else {
-        game.hitComboCounter = 0 ;
+        onHitComboCounterDecrease(game);
+        playWallHitSound();
       }
     } else if (target.type === 'TARGET_LEFT' && this.ball.position.x < game.center.x) {
       var targetCenterY = GAME_BOUNDS_PADDING + GAME_BOUNDS_HEIGHT * target.axis;
@@ -60,9 +86,11 @@ WallHitEvent.prototype.process = function(game) {
       var targetBottomMostY = targetCenterY + (targetSize / 2);
       if ((targetBottomMostY >= this.ball.position.y) && (this.ball.position.y >= targetTopMostY)) {
         updateTargetAfterHit(target, this.ball, game);
-        game.hitComboCounter += 1;
+        onHitComboCounterIncrease(game);
+        playTargetHitSound();
       } else {
-        game.hitComboCounter = 0 ;
+        onHitComboCounterDecrease(game);
+        playWallHitSound();
       }
     } else if (target.type === 'TARGET_RIGHT' && this.ball.position.x > game.center.x) {
       var targetCenterY = GAME_BOUNDS_PADDING + GAME_BOUNDS_HEIGHT * target.axis;
@@ -71,9 +99,11 @@ WallHitEvent.prototype.process = function(game) {
       var targetBottomMostY = targetCenterY + (targetSize / 2);
       if ((targetBottomMostY >= this.ball.position.y) && (this.ball.position.y >= targetTopMostY)) {
         updateTargetAfterHit(target, this.ball, game);
-        game.hitComboCounter += 1;
+        onHitComboCounterIncrease(game);
+        playTargetHitSound();
       } else {
-        game.hitComboCounter = 0 ;
+        onHitComboCounterDecrease(game);
+        playWallHitSound();
       }
     }
   }
@@ -105,7 +135,8 @@ function updateTargetAfterHit(target, ball, game) {
       (SCORE_TIME_BONUS * (1 / timeElapsedSeconds * SCORE_TIME_CONSTANT));
     game.score += Math.round(targetHitPointsWorth);
     if (game.targets.length === 0) {
-      console.log('New level');
+      console.log('level up');
+      playLevelUpSound();
       game.level += 1;
       game.timeLevelStartedAt = (new Date()).getTime();
       _.each(['TARGET_TOP', 'TARGET_LEFT', 'TARGET_RIGHT', 'TARGET_BOTTOM'], function (type) {
@@ -313,6 +344,21 @@ function drawBounds(game) {
 }
 
 function drawBall(ball) {
+  // draw velocity vector
+  if (ball.type === 'player') {
+    stroke('gray');
+    var CONST = 2.0;
+    var pos = ball.position;
+    var vel = ball.velocity;
+    var head = p5.Vector.add(pos, p5.Vector.mult(vel, CONST));
+    var left = vel.copy();
+    left.rotate(-(3/4)*PI);
+    left.add(head);
+
+    line(pos.x, pos.y, head.x, head.y);
+    line(head.x, head.y, left.x, left.y);
+  }
+  // draw the actuall ball
   if (ball.type === 'player') {
     fill('white');
   } else {
@@ -409,17 +455,27 @@ var Target = function(type, opts) {
 
 ////////////////////////////////////////////////////////////////////////////////
 // main p5 callback functions
+function preload() {
+  console.log('preload...');
+  soundFormats('mp3', 'wav');
+  sounds.wallHit = loadSound('sounds/ball2.wav');
+  sounds.targetHit = loadSound('sounds/game1.mp3');
+  sounds.gameOver = loadSound('sounds/game_over1.wav');
+  sounds.levelUp = loadSound('sounds/game6.wav');
+  console.log('done!');
+}
+
 function setup() {
-  console.log('Welcome to Rong');
+  console.log('setup');
 
   var initialBallSpeed = 5*random();
   var initialBallVelocity = p5.Vector.random2D();
   initialBallVelocity.mult(initialBallSpeed);
 
-  var balls = _.times(100, function (n) {
+  var balls = _.times(200, function (n) {
     return {
       type: 'decoration',
-      mass: 0.1,
+      mass: 0.01,
       position: createVector(
         GAME_BOUNDS_PADDING + 5 + (random() * GAME_BOUNDS_WIDTH),
         GAME_BOUNDS_PADDING + 5 + (random() * GAME_BOUNDS_HEIGHT)
@@ -429,7 +485,7 @@ function setup() {
         random(),
         random()
       ),
-      radius: 1.0
+      radius: 0.5 + random() * 1.0
     };
   }).concat({
     type: 'player',
@@ -440,7 +496,7 @@ function setup() {
     ),
     acceleration: createVector(0, 0),
     velocity: createVector(0, 0),
-    radius: 4.5
+    radius: 3.5
   });
 
   game = {
