@@ -19,6 +19,8 @@ var BALL_SPEED_BONUS_MULTIPLIER_AFTER_HIT_TARGET = 0.85;
 var BALL_SPEED_WALL_DAMPING_MULTIPLIER = 0.95;
 var BALL_ARROW_SIZE_CONSTANT = 20.0;
 var BALL_ARROW_HEAD_CONSTANT = 7.0;
+var PAD_SPEED = 0.40;
+var PAD_DAMPING = 0.95;
 var PAD_MASS_INCREASE_MULTIPLIER = 0.05;
 var PAD_RADIUS_INCREASE_MULTIPLIER = 0.05;
 var TAIL_SIZE = 5;
@@ -35,7 +37,7 @@ var playerBall = null;
 // prototypes
 
 function targetSizeForLevel(level) {
-  return 0.75 * Math.pow(0.975, level);
+  return 0.65 * Math.pow(0.9, level);
 }
 
 var ExplosionEvent = function(opts) {
@@ -177,6 +179,9 @@ function onHitComboCounterIncrease(points, target, ball, game) {
 
 function onHitComboCounterDecrease(target, ball, game) {
   game.hitComboCounter -= 1;
+  if (game.hitComboCounter < 0) {
+    game.hitComboCounter = 0;
+  }
   _.each(objs, function (obj) {
     if ((game.hitComboCounter >= obj.start) && (game.hitComboCounter <= obj.end)) {
       sounds.loop[obj.loopIndex].setVolume(0.5);
@@ -368,22 +373,22 @@ function updatePad(game) {
   var pad = game.pad;
 
   if (keyIsDown(LEFT_ARROW)) {
-    pad.velocity.add(createVector(-0.5, 0));
+    pad.velocity.add(createVector(-PAD_SPEED, 0));
   }
 
   if (keyIsDown(RIGHT_ARROW)) {
-    pad.velocity.add(createVector(0.5, 0));
+    pad.velocity.add(createVector(PAD_SPEED, 0));
   }
 
   if (keyIsDown(UP_ARROW)) {
-    pad.velocity.add(createVector(0, -0.5));
+    pad.velocity.add(createVector(0, -PAD_SPEED));
   }
 
   if (keyIsDown(DOWN_ARROW)) {
-    pad.velocity.add(createVector(0, 0.5));
+    pad.velocity.add(createVector(0, PAD_SPEED));
   }
 
-  pad.velocity.mult(0.95);
+  pad.velocity.mult(PAD_DAMPING);
 
   if ((pad.position.x + pad.radius) + pad.velocity.x > bounds.x + bounds.width) {
     pad.position.x = (bounds.x + bounds.width) - pad.radius;
@@ -747,7 +752,7 @@ function setup() {
 
   playerBall = {
     type: 'player',
-    mass: 0.3,
+    mass: 0.4,
     position: createVector(
       GAME_BOUNDS_WIDTH * random(),
       GAME_BOUNDS_HEIGHT * random()
