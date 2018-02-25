@@ -359,7 +359,7 @@ function updateGame(game) {
 ////////////////////////////////////////////////////////////////////////////////
 // drawing functions
 function drawHUD(game) {
-  var HUD_PADDING = 25;
+  var HUD_PADDING = 15;
   var HUD_TEXT_SIZE = 13;
   var GOLDEN_RATIO = 1.61803398875/2;
   textSize(HUD_TEXT_SIZE);
