@@ -25,6 +25,7 @@ var TAIL_RADIUS = 5.0;
 var game = null;
 var tail = new Array(TAIL_SIZE);
 var sounds = {};
+var fonts = {};
 var playerBall = null;
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -360,9 +361,10 @@ function updateGame(game) {
 function drawHUD(game) {
   var HUD_PADDING = 25;
   var HUD_TEXT_SIZE = 13;
-  var GOLDEN_RATIO = 1.61803398875;
+  var GOLDEN_RATIO = 1.61803398875/2;
   textSize(HUD_TEXT_SIZE);
   fill('white');
+  textFont(fonts.VT323);
   text(
     "LEVEL " + game.level,
     GAME_BOUNDS_PADDING + (HUD_PADDING / 2),
@@ -540,8 +542,14 @@ function drawEvent(event) {
       console.log(textX+','+textY + ' => ' + textString);
     }
 
-    fill('gray');
-    noStroke();
+    stroke('rgba(255,255,128,0.85)');
+    fill('black');
+    textFont(fonts.Bungee);
+    // fill('rgba(255,255,128,0.85)');
+    // text(
+    //   textString,
+    //   textX,
+    //   textY + 0.1);
     text(
       textString,
       textX,
@@ -609,6 +617,8 @@ function preload() {
   sounds.targetHit = loadSound('sounds/game1.mp3');
   sounds.gameOver = loadSound('sounds/game_over1.wav');
   sounds.levelUp = loadSound('sounds/game6.wav');
+  fonts.VT323 = loadFont('fonts/VT323-Regular.ttf');
+  fonts.Bungee = loadFont('fonts/Bungee.ttf');
   console.log('done!');
 }
 
