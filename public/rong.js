@@ -45,9 +45,9 @@ var ExplosionEvent = function(opts) {
   this.x = opts.x;
   this.y = opts.y;
   this.energy = opts.energy;
+  this.timeToLiveMs = opts.delayMs;
   this.particles = [];
   this.timeStartedAt = (new Date()).getTime();
-  this.timeToLiveMs = opts.delayMs;
   this.counter = 0;
   return this;
 };
@@ -66,12 +66,33 @@ ExplosionEvent.prototype.shouldBeDead = function () {
 };
 
 ExplosionEvent.prototype.process = function (game) {
-  if (this.shouldBeDead()) {
-    return true;
-  } else {
-    this.counter += 1;
-    return false;
-  }
+  // if (this.shouldBeDead()) {
+  //   return true;
+  // } else {
+  //   this.counter += 1;
+  //   return false;
+  // }
+  _.times(10, function(n) {
+    var dir = playerBall.velocity.copy();
+    dir.rotate(PI);
+    dir.rotate((random() * HALF_PI) - (random() * HALF_PI));
+    dir.normalize();
+    var ball = {
+      type: 'particle',
+      createdAt: (new Date()).getTime(),
+      timeToLiveMs: 2000,
+      mass: 0.01,
+      position: createVector(
+        playerBall.position.x,
+        playerBall.position.y
+      ),
+      acceleration: p5.Vector.mult(dir, 2.0),
+      velocity: p5.Vector.mult(dir, 3.0),
+      radius: 0.75 + (random() * 0.75)
+    };
+    game.balls.push(ball);
+  });
+  return true;
 };
 
 var ScoreEvent = function(opts) {
@@ -167,6 +188,12 @@ function onHitComboCounterIncrease(points, target, ball, game) {
     delayMs: 750,
     x: target.centerX,
     y: target.centerY,
+  }));
+  game.events.push(new ExplosionEvent({
+    x: ball.position.x,
+    y: ball.position.y,
+    delayMs: 1000,
+    energy: 5.0,
   }));
   _.each(objs, function (obj) {
     if ((game.hitComboCounter >= obj.start) && (game.hitComboCounter <= obj.end)) {
@@ -617,7 +644,9 @@ function drawTail(game) {
 }
 
 function drawEvent(event) {
-  if (event.type === 'SCORE_EVENT') {
+  if (event.type === 'EXPLOSION_EVENT') {
+
+  } else if (event.type === 'SCORE_EVENT') {
     textSize(11 + Math.round(4 * Math.pow(1 + event.percentage(), 1.25)));
     var prefix = '+';
     var suffix = 'pts.';
