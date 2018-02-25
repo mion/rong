@@ -266,12 +266,12 @@ function updateBall(ball, game) {
   var pad = game.pad;
   var bounds = game.bounds;
 
-  if (keyIsDown(DOWN_ARROW)) {
+  if (keyIsDown(SHIFT)) {
     var direction = p5.Vector.sub(pad.position, ball.position);
     var distance = ball.position.dist(pad.position);
     var force = (GAME_GRAVITY_CONSTANT * pad.mass * ball.mass) / (distance * distance);
     ball.acceleration = p5.Vector.mult(direction, force);
-  } else if (keyIsDown(UP_ARROW)) {
+  } else if (keyIsDown(ESCAPE)) {
     var direction = p5.Vector.sub(ball.position, pad.position);
     var distance = ball.position.dist(pad.position);
     var force = (GAME_GRAVITY_CONSTANT * pad.mass * ball.mass) / (distance * distance);
@@ -339,6 +339,14 @@ function updatePad(game) {
 
   if (keyIsDown(RIGHT_ARROW)) {
     pad.velocity.add(createVector(0.5, 0));
+  }
+
+  if (keyIsDown(UP_ARROW)) {
+    pad.velocity.add(createVector(0, -0.5));
+  }
+
+  if (keyIsDown(DOWN_ARROW)) {
+    pad.velocity.add(createVector(0, 0.5));
   }
 
   pad.velocity.mult(0.95);
