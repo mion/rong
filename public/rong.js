@@ -347,16 +347,20 @@ function drawBall(ball) {
   // draw velocity vector
   if (ball.type === 'player') {
     stroke('gray');
-    var CONST = 4.0;
+    var CONST = 10.0;
     var pos = ball.position;
     var vel = ball.velocity;
     var head = p5.Vector.add(pos, p5.Vector.mult(vel, CONST));
     var left = vel.copy();
     left.rotate(-(3/4)*PI);
     left.add(head);
+    var right = vel.copy();
+    right.rotate(+(3/4)*PI);
+    right.add(head);
 
     line(pos.x, pos.y, head.x, head.y);
     line(head.x, head.y, left.x, left.y);
+    line(head.x, head.y, right.x, right.y);
   }
   // draw the actuall ball
   if (ball.type === 'player') {
