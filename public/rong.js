@@ -26,6 +26,7 @@ var PAD_RADIUS_INCREASE_MULTIPLIER = 0.05;
 var TAIL_SIZE = 5;
 var TAIL_DELAY_MS = 50;
 var TAIL_RADIUS = 5.0;
+var EXPLOSION_PARTICLES_MULTIPLIER = 100;
 
 var game = null;
 var tail = new Array(TAIL_SIZE);
@@ -36,6 +37,22 @@ var playerBall = null;
 ////////////////////////////////////////////////////////////////////////////////
 // prototypes
 
+var _percentage = function (obj) {
+  return (_timeAlive(obj) / obj.timeToLiveMs);
+};
+
+var _timeAlive = function (obj) {
+  var currentTime = (new Date()).getTime();
+  return currentTime - obj.createdAt;
+};
+
+// var nextParticleId = 1;
+// var Particle = function(opts) {
+//   this.id = nextParticleId++;
+//   this.position = createVector(opts.x, opts.y);
+//   return this;
+// };
+
 function targetSizeForLevel(level) {
   return 0.65 * Math.pow(0.9, level);
 }
@@ -45,7 +62,7 @@ var ExplosionEvent = function(opts) {
   this.x = opts.x;
   this.y = opts.y;
   this.energy = opts.energy;
-  this.timeToLiveMs = opts.delayMs;
+  this.timeToLiveMs = opts.timeToLiveMs;
   this.particles = [];
   this.timeStartedAt = (new Date()).getTime();
   this.counter = 0;
@@ -66,13 +83,10 @@ ExplosionEvent.prototype.shouldBeDead = function () {
 };
 
 ExplosionEvent.prototype.process = function (game) {
-  // if (this.shouldBeDead()) {
-  //   return true;
-  // } else {
-  //   this.counter += 1;
-  //   return false;
-  // }
-  _.times(10, function(n) {
+  var ttl = this.timeToLiveMs;
+  _.times(Math.round(this.energy * EXPLOSION_PARTICLES_MULTIPLIER), function(n) {
+    var speed = playerBall.velocity.mag();
+    var accel = playerBall.acceleration.mag();
     var dir = playerBall.velocity.copy();
     dir.rotate(PI);
     dir.rotate((random() * HALF_PI) - (random() * HALF_PI));
@@ -80,14 +94,14 @@ ExplosionEvent.prototype.process = function (game) {
     var ball = {
       type: 'particle',
       createdAt: (new Date()).getTime(),
-      timeToLiveMs: 2000,
+      timeToLiveMs: ttl,
       mass: 0.01,
       position: createVector(
         playerBall.position.x,
         playerBall.position.y
       ),
-      acceleration: p5.Vector.mult(dir, 2.0),
-      velocity: p5.Vector.mult(dir, 3.0),
+      acceleration: p5.Vector.mult(dir, random() * 5 * accel),
+      velocity: p5.Vector.mult(dir, random() * 2 * speed),
       radius: 0.75 + (random() * 0.75)
     };
     game.balls.push(ball);
@@ -192,8 +206,8 @@ function onHitComboCounterIncrease(points, target, ball, game) {
   game.events.push(new ExplosionEvent({
     x: ball.position.x,
     y: ball.position.y,
-    delayMs: 1000,
-    energy: 5.0,
+    timeToLiveMs: 900,
+    energy: 2.0,
   }));
   _.each(objs, function (obj) {
     if ((game.hitComboCounter >= obj.start) && (game.hitComboCounter <= obj.end)) {
@@ -467,15 +481,23 @@ function updateGame(game) {
     game.events.splice(index, 1);
   }
 
+  var ballIndexesToBeRemoved = [];
   for (var i = 0; i < game.balls.length; i++) {
     var ball = game.balls[i];
     updateBall(ball, game);
+    if (ball.type === 'particle') {
+      var currentTime = (new Date()).getTime();
+      var timeAliveMs = currentTime - ball.createdAt;
+      if (timeAliveMs > ball.timeToLiveMs) {
+        // tag for deletion
+        ballIndexesToBeRemoved.push(i);
+      }
+    }
   }
-
-  // var idx = currentTailIndex++;
-  // var t = tail[idx];
-  // t.x = playerBall.position.x;
-  // t.y = playerBall.position.y;
+  while (ballIndexesToBeRemoved.length > 0) {
+    var index = ballIndexesToBeRemoved.pop();
+    game.balls.splice(index, 1);
+  }
 
   updatePad(game);
 }
@@ -550,12 +572,21 @@ function drawBall(ball) {
     line(head.x, head.y, left.x, left.y);
     line(head.x, head.y, right.x, right.y);
   }
+
   // draw the actuall ball
-  if (ball.type === 'player') {
+  if (ball.type === 'particle') {
+    var currTime = (new Date()).getTime();
+    var isDead = (currTime - ball.createdAt) >= ball.timeToLiveMs;
+    var p = isDead ? '0.0' : (1.0 - ((currTime - ball.createdAt) / ball.timeToLiveMs)).toPrecision(2);
+    var colorStr = 'rgba(255,255,0,'+p+')';
+    fill(colorStr);
+    // console.log('colorStr = ' + colorStr);
+  } else if (ball.type === 'player') {
     fill('white');
   } else {
     fill('gray');
   }
+
   noStroke();
   ellipse(ball.position.x, ball.position.y, 2 * ball.radius);
   // draw the tail
@@ -679,8 +710,8 @@ function drawEvent(event) {
       console.log(textX+','+textY + ' => ' + textString);
     }
 
-    fill('rgba(200,255,0,0.95)');
-    stroke('green');
+    fill('yellow');
+    noStroke();
     textFont(fonts.VT323);
     // fill('rgba(255,255,128,0.85)');
     // text(
