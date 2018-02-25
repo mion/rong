@@ -30,15 +30,24 @@ var playerBall = null;
 ////////////////////////////////////////////////////////////////////////////////
 // prototypes
 
+function targetSizeForLevel(level) {
+  return 0.5 * Math.pow(0.9, level);
+}
+
 var ScoreEvent = function(opts) {
   this.type = 'SCORE_EVENT';
-  this.text = opts.text;
+  this.points = opts.points;
+  this.target = opts.target;
   this.x = opts.x;
   this.y = opts.y;
   this.timeStartedAt = (new Date()).getTime();
   this.timeToLiveMs = opts.delayMs;
   this.counter = 0;
   return this;
+};
+
+ScoreEvent.prototype.percentage = function () {
+  return (this.timeAlive() / this.timeToLiveMs);
 };
 
 ScoreEvent.prototype.timeAlive = function () {
@@ -79,13 +88,15 @@ function playWallHitSound() {
 function playLevelUpSound() {
 }
 
-function onHitComboCounterIncrease(target, ball, game) {
+function onHitComboCounterIncrease(points, target, ball, game) {
   game.hitComboCounter += 1;
+  // console.log('points: ' + points);
   game.events.push(new ScoreEvent({
-    text: '+score',
+    points: points,
+    target: target,
     delayMs: 1000,
-    x: ball.position.x,
-    y: ball.position.y,
+    x: target.centerX,
+    y: target.centerY,
   }));
 }
 
@@ -104,8 +115,8 @@ WallHitEvent.prototype.process = function(game) {
       var targetLeftMostX = targetCenterX - (targetSize / 2);
       var targetRightMostX = targetCenterX + (targetSize / 2);
       if ((targetLeftMostX <= this.ball.position.x) && (this.ball.position.x <= targetRightMostX)) {
-        updateTargetAfterHit(target, this.ball, game);
-        onHitComboCounterIncrease(target, this.ball, game);
+        var points = updateTargetAfterHit(target, this.ball, game);
+        onHitComboCounterIncrease(points, target, this.ball, game);
         playTargetHitSound();
       } else {
         onHitComboCounterDecrease(target, this.ball, game);
@@ -117,8 +128,8 @@ WallHitEvent.prototype.process = function(game) {
       var targetLeftMostX = targetCenterX - (targetSize / 2);
       var targetRightMostX = targetCenterX + (targetSize / 2);
       if ((targetLeftMostX <= this.ball.position.x) && (this.ball.position.x <= targetRightMostX)) {
-        updateTargetAfterHit(target, this.ball, game);
-        onHitComboCounterIncrease(target, this.ball, game);
+        var points = updateTargetAfterHit(target, this.ball, game);
+        onHitComboCounterIncrease(points, target, this.ball, game);
         playTargetHitSound();
       } else {
         onHitComboCounterDecrease(target, this.ball, game);
@@ -130,8 +141,8 @@ WallHitEvent.prototype.process = function(game) {
       var targetTopMostY = targetCenterY - (targetSize / 2);
       var targetBottomMostY = targetCenterY + (targetSize / 2);
       if ((targetBottomMostY >= this.ball.position.y) && (this.ball.position.y >= targetTopMostY)) {
-        updateTargetAfterHit(target, this.ball, game);
-        onHitComboCounterIncrease(target, this.ball, game);
+        var points = updateTargetAfterHit(target, this.ball, game);
+        onHitComboCounterIncrease(points, target, this.ball, game);
         playTargetHitSound();
       } else {
         onHitComboCounterDecrease(target, this.ball, game);
@@ -143,8 +154,8 @@ WallHitEvent.prototype.process = function(game) {
       var targetTopMostY = targetCenterY - (targetSize / 2);
       var targetBottomMostY = targetCenterY + (targetSize / 2);
       if ((targetBottomMostY >= this.ball.position.y) && (this.ball.position.y >= targetTopMostY)) {
-        updateTargetAfterHit(target, this.ball, game);
-        onHitComboCounterIncrease(target, this.ball, game);
+        var points = updateTargetAfterHit(target, this.ball, game);
+        onHitComboCounterIncrease(points, target, this.ball, game);
         playTargetHitSound();
       } else {
         onHitComboCounterDecrease(target, this.ball, game);
@@ -185,8 +196,9 @@ function updateTargetAfterHit(target, ball, game) {
       playLevelUpSound();
       game.level += 1;
       game.timeLevelStartedAt = (new Date()).getTime();
-      _.each(['TARGET_TOP', 'TARGET_LEFT', 'TARGET_RIGHT', 'TARGET_BOTTOM'], function (type) {
-        var size = 0.1 + (0.15 * (1 / game.level));
+      var types = ['TARGET_TOP', 'TARGET_LEFT', 'TARGET_RIGHT', 'TARGET_BOTTOM'];
+      _.each(types, function (type) {
+        var size = targetSizeForLevel(game.level);
         var target = new Target(type, {
           size: size,
           axis: (size / 2) + (random() * (1.0 - size))
@@ -194,6 +206,7 @@ function updateTargetAfterHit(target, ball, game) {
         game.targets.push(target);
       });
     }
+    return targetHitPointsWorth;
   } else {
     throw('could not find hit target with id = ' + target.id);
   }
@@ -496,10 +509,43 @@ function drawTail(game) {
 
 function drawEvent(event) {
   if (event.type === 'SCORE_EVENT') {
-    fill('green');
-    textSize(13);
+    textSize(11 + Math.round(4 * Math.pow(1 + event.percentage(), 1.25)));
+    var prefix = '';
+    var dirH = 0;
+    var dirV = 0;
+    if (event.target.type == 'TARGET_LEFT') {
+      dirH = +1;
+      dirV = 0;
+    } else if (event.target.type == 'TARGET_RIGHT') {
+      dirH = -1;
+      dirV = 0;
+    } else if (event.target.type == 'TARGET_TOP') {
+      dirH = 0;
+      dirV = 1;
+    } else if (event.target.type == 'TARGET_BOTTOM') {
+      dirH = 0;
+      dirV = -1;
+    } else {
+      throw('unknown target type = ' + event.target.type);
+    }
+
+    var textString = prefix + Math.round(
+      (event.percentage() > 0.40) ?
+        event.points :
+        (event.points * Math.pow(1.0 + event.percentage(), 2))
+    );
+    var textX = event.x + (dirH * (event.percentage() * 30));
+    var textY = event.y + (dirV * (event.percentage() * 30));
+    if (event.target.type == 'TARGET_BOTTOM') {
+      console.log(textX+','+textY + ' => ' + textString);
+    }
+
+    fill('red');
     noStroke();
-    text(event.text, event.x, event.y);
+    text(
+      textString,
+      textX,
+      textY);
   }
 }
 
@@ -537,15 +583,22 @@ var Target = function(type, opts) {
   this.type = type;
   this.axis = opts.axis;
   this.size = opts.size;
+  if (type === 'TARGET_TOP' || type === 'TARGET_BOTTOM') {
+    this.centerX = GAME_BOUNDS_PADDING + GAME_BOUNDS_WIDTH * opts.axis;
+    this.sizeX = GAME_BOUNDS_WIDTH * opts.size;
+    this.leftMostX = this.centerX - (this.sizeX / 2);
+    this.rightMostX = this.centerY + (this.sizeX / 2);
+    this.centerY = (type === 'TARGET_TOP') ? 0 : GAME_BOUNDS_PADDING + GAME_BOUNDS_HEIGHT;
+  }
+  if (type === 'TARGET_LEFT' || type === 'TARGET_RIGHT') {
+    this.centerY = GAME_BOUNDS_PADDING + GAME_BOUNDS_HEIGHT * opts.axis;
+    this.sizeY = GAME_BOUNDS_HEIGHT * opts.size;
+    this.topMostY = this.centerY - (this.sizeY / 2);
+    this.bottomMostY = this.centerY + (this.sizeY / 2);
+    this.centerX = (type === 'TARGET_LEFT') ? 0 : GAME_BOUNDS_PADDING + GAME_BOUNDS_WIDTH;
+  }
   return this;
 };
-
-//
-// Target.prototype.centerX = function () {
-//   if (this.type === 'TARGET_TOP') {
-//
-//   }
-// };
 
 ////////////////////////////////////////////////////////////////////////////////
 // main p5 callback functions
@@ -607,10 +660,10 @@ function setup() {
     state: 'GAME_RUNNING',
     score: 0,
     targets: [
-      new Target('TARGET_TOP', {axis: 0.5, size: 0.125}),
-      new Target('TARGET_LEFT', {axis: 0.5, size: 0.125}),
-      new Target('TARGET_RIGHT', {axis: 0.5, size: 0.125}),
-      new Target('TARGET_BOTTOM', {axis: 0.5, size: 0.125})
+      new Target('TARGET_TOP', {axis: 0.5, size: 0.5}),
+      new Target('TARGET_LEFT', {axis: 0.5, size: 0.5}),
+      new Target('TARGET_RIGHT', {axis: 0.5, size: 0.5}),
+      new Target('TARGET_BOTTOM', {axis: 0.5, size: 0.5})
     ],
     bounds: {
       x: GAME_BOUNDS_PADDING,
