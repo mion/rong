@@ -461,7 +461,11 @@ function drawBounds(game) {
 function drawBall(ball) {
   // draw velocity vector
   if (ball.type === 'player') {
-    stroke('gray');
+    if (keyIsDown(ESCAPE) || keyIsDown(SHIFT)) {
+      stroke('gray');
+    } else {
+      noStroke();
+    }
     var pos = ball.position;
     var vel = ball.velocity;
     var head = p5.Vector.add(pos, p5.Vector.mult(vel, BALL_ARROW_SIZE_CONSTANT));
