@@ -38,6 +38,16 @@ function targetSizeForLevel(level) {
   return 0.5 * Math.pow(0.9, level);
 }
 
+var ExplosionEvent = function(opts) {
+  this.type = 'EXPLOSION_EVENT';
+  this.origin = {
+    x: opts.x,
+    y: opts.y
+  };
+  this.energy = opts.energy;
+  this.particles = [];
+};
+
 var ScoreEvent = function(opts) {
   this.type = 'SCORE_EVENT';
   this.points = opts.points;
@@ -708,14 +718,14 @@ function setup() {
 
   playerBall = {
     type: 'player',
-    mass: 0.2,
+    mass: 0.3,
     position: createVector(
       GAME_BOUNDS_WIDTH * random(),
       GAME_BOUNDS_HEIGHT * random()
     ),
     acceleration: createVector(0, 0),
     velocity: createVector(0, 0),
-    radius: 3.5
+    radius: 7.0
   };
   var balls = _.times(200, function (n) {
     return {
