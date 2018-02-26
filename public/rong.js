@@ -47,11 +47,18 @@ var GameEvent = function (opts) {
 
 GameEvent.prototype.initialize = function (type, opts) {
   this.type = type;
-  this.x = opts.x || 0;
-  this.y = opts.y || 0;
-  this.timeToLiveMs = opts.timeToLiveMs || 1000;
   this.timeStartedAt = (new Date()).getTime();
   this.counter = 0;
+  // Options
+  opts = _.defaults(
+    _.defaultTo(opts, {}), {
+      x: 0,
+      y: 0,
+      timeToLiveMs: 1000,
+    });
+  this.x = opts.x;
+  this.y = opts.y;
+  this.timeToLiveMs = opts.timeToLiveMs;
 };
 
 GameEvent.prototype.percentage = function () {
@@ -77,7 +84,7 @@ GameEvent.prototype.update = function (game) {
 };
 
 GameEvent.prototype.process = function (game) {
-  return;
+  return true;
 };
 
 GameEvent.prototype.draw = function (game) {
@@ -103,11 +110,7 @@ var BonusEvent = function (opts) {
   return this;
 };
 
-BonusEvent.prototype = GameEvent;
-
-BonusEvent.prototype.shouldBeRemoved = function (game) {
-  return true;
-};
+BonusEvent.prototype = new GameEvent();
 
 BonusEvent.prototype.draw = function (game) {
   var delta = this.final.size - this.initial.size;
@@ -128,7 +131,7 @@ var ExplosionEvent = function(opts) {
   return this;
 };
 
-ExplosionEvent.prototype = GameEvent;
+ExplosionEvent.prototype = new GameEvent();
 
 ExplosionEvent.prototype.process = function (game) {
   var ttl = this.timeToLiveMs;
@@ -167,7 +170,7 @@ var ScoreEvent = function (opts) {
   return this;
 };
 
-ScoreEvent.prototype = GameEvent;
+ScoreEvent.prototype = new GameEvent();
 
 var WallHitEvent = function (opts) {
   this.initialize('WALL_HIT_EVENT', opts);
@@ -176,7 +179,7 @@ var WallHitEvent = function (opts) {
   return this;
 };
 
-WallHitEvent.prototype = GameEvent;
+WallHitEvent.prototype = new GameEvent();
 
 function playTargetHitSound() {
   sounds.targetHit.setVolume(0.75);
@@ -497,10 +500,12 @@ function updatePad(game) {
 //   }
 // }
 
-function updateGame(game) {
+function updateEvents(game) {
   var indexesToBeRemoved = [];
   for (var i = 0; i < game.events.length; i++) {
-    if (game.events[i].process(game)) {
+    var isEventFinished = game.events[i].update(game);
+    var isEventProcessed = game.events[i].process(game);
+    if (isEventFinished || isEventProcessed) {
       indexesToBeRemoved.push(i);
     }
   }
@@ -508,7 +513,9 @@ function updateGame(game) {
     var index = indexesToBeRemoved.pop();
     game.events.splice(index, 1);
   }
+}
 
+function updateBalls(game) {
   var ballIndexesToBeRemoved = [];
   for (var i = 0; i < game.balls.length; i++) {
     var ball = game.balls[i];
@@ -526,7 +533,11 @@ function updateGame(game) {
     var index = ballIndexesToBeRemoved.pop();
     game.balls.splice(index, 1);
   }
+}
 
+function updateGame(game) {
+  updateEvents(game);
+  updateBalls(game);
   updatePad(game);
 }
 
