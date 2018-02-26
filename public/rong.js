@@ -1035,16 +1035,3 @@ function draw() {
   drawGame(game);
   updateGame(game);
 }
-
-var __test = function () {
-  window.evt = new ScoreEvent({
-    points: 456,
-    target: null,
-    timeToLiveMs: 123,
-    x: 42,
-    y: -53,
-  });
-  console.log(window.evt);
-};
-
-__test();
