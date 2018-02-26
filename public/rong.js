@@ -128,6 +128,10 @@ var BonusEvent = function (opts) {
 
 BonusEvent.prototype = new GameEvent();
 
+BonusEvent.prototype.process = function (game) {
+  return false;
+};
+
 BonusEvent.prototype.draw = function (game) {
   var delta = this.finalTextSize - this.initialTextSize;
   textSize(this.initialTextSize + (this.percentage() * delta));
