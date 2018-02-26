@@ -15,6 +15,7 @@ var GAME_BOUNDS_PADDING = 5;
 var GAME_BOUNDS_WIDTH = CANVAS_WIDTH - 2*GAME_BOUNDS_PADDING;
 var GAME_BOUNDS_HEIGHT = CANVAS_HEIGHT - 2*GAME_BOUNDS_PADDING;
 var GAME_GRAVITY_CONSTANT = 37.0;
+var GAME_SHOULD_LOAD_SOUNDS = false;
 var BALL_SPEED_BONUS_MULTIPLIER_AFTER_HIT_TARGET = 0.85;
 var BALL_SPEED_WALL_DAMPING_MULTIPLIER = 0.95;
 var BALL_ARROW_SIZE_CONSTANT = 20.0;
@@ -30,7 +31,7 @@ var EXPLOSION_PARTICLES_MULTIPLIER = 100;
 
 var game = null;
 var tail = new Array(TAIL_SIZE);
-var sounds = {};
+var sounds = null;
 var fonts = {};
 var playerBall = null;
 var maximumKinecticEnergy = 1.0;
@@ -40,12 +41,33 @@ var maximumKinecticEnergy = 1.0;
 
 /* GameEvent
     The base class for all events. */
-var GameEvent = function (opts) {
-  this.initialize('GAME_EVENT', opts);
+
+/* * * *
+
+var _GameEvent = {
+  type: 'GAME_EVENT',
+  counter: 0,
+  timeToLiveMs: 1000,
+  createdAt: null,
+  initialize: function (game) {
+    this.createdAt = (new Date()).getTime();
+  },
+};
+
+var createGameEvent = function (game) {
+  var obj = Object.create(_GameEvent);
+  obj.initialize(gmae);
+  return obj;
+};
+
+* * * */
+
+var GameEvent = function () {
   return this;
 };
 
 GameEvent.prototype.initialize = function (type, opts) {
+  console.log('initializing event of type: ' + type);
   this.type = type;
   this.timeStartedAt = (new Date()).getTime();
   this.counter = 0;
@@ -88,6 +110,7 @@ GameEvent.prototype.process = function (game) {
 };
 
 GameEvent.prototype.draw = function (game) {
+  console.log('GameEvent#draw not implemented');
   return;
 };
 
@@ -98,24 +121,17 @@ var BonusEvent = function (opts) {
   this.initialize('BONUS_EVENT', opts);
   this.message = opts.message;
   this.fillColor = opts.fillColor;
-  this.initial = {
-    size: opts.initial.size,
-    position: opts.initial.position
-  };
-  this.final = {
-    size: opts.final.size,
-    position: opts.final.position
-  };
-  this.curve = opts.curve;
+  this.initialTextSize = opts.initialTextSize;
+  this.finalTextSize = opts.finalTextSize;
   return this;
 };
 
 BonusEvent.prototype = new GameEvent();
 
 BonusEvent.prototype.draw = function (game) {
-  var delta = this.final.size - this.initial.size;
-  textSize(this.initial.size + (this.percentage() * delta));
-  fill(this.color);
+  var delta = this.finalTextSize - this.initialTextSize;
+  textSize(this.initialTextSize + (this.percentage() * delta));
+  fill(this.fillColor);
   noStroke();
   text(this.message, this.x, this.y);
 };
@@ -172,6 +188,51 @@ var ScoreEvent = function (opts) {
 
 ScoreEvent.prototype = new GameEvent();
 
+ScoreEvent.prototype.process = function (game) {
+  return false;
+};
+
+ScoreEvent.prototype.draw = function (game) {
+  console.log('drawing score event');
+  var prefix = '+';
+  var suffix = 'pts.';
+  var dirH = 0;
+  var dirV = 0;
+
+  if (this.target.type == 'TARGET_LEFT') {
+    dirH = +1;
+    dirV = 0;
+  } else if (this.target.type == 'TARGET_RIGHT') {
+    dirH = -1;
+    dirV = 0;
+  } else if (this.target.type == 'TARGET_TOP') {
+    dirH = 0;
+    dirV = 1;
+  } else if (this.target.type == 'TARGET_BOTTOM') {
+    dirH = 0;
+    dirV = -1;
+  } else {
+    throw('unknown target type = ' + this.target.type);
+  }
+
+  var textString = prefix + Math.round(
+    (this.percentage() > 0.60) ?
+      this.points :
+      (this.points * Math.pow(1.0 + this.percentage(), 2))
+    ) + suffix;
+
+  var textX = this.x + (dirH * (this.percentage() * 30));
+  var textY = this.y + (dirV * (this.percentage() * 30));
+
+  fill('yellow');
+  noStroke();
+  textFont(fonts.VT323);
+  textSize(
+    11 + Math.round(4 * Math.pow(1 + this.percentage(), 1.25))
+  );
+  text(textString, textX, textY);
+};
+
 var WallHitEvent = function (opts) {
   this.initialize('WALL_HIT_EVENT', opts);
   this.wall = opts.wall;
@@ -182,21 +243,25 @@ var WallHitEvent = function (opts) {
 WallHitEvent.prototype = new GameEvent();
 
 function playTargetHitSound() {
+  if (!sounds) { return; }
   sounds.targetHit.setVolume(0.75);
   sounds.targetHit.play();
 }
 
 function playWallHitSound() {
+  if (!sounds) { return; }
   sounds.wallHit.setVolume(0.25);
   sounds.wallHit.play();
 }
 
 function playLevelUpSound() {
+  if (!sounds) { return; }
   sounds.levelUp.setVolume(1.00);
   sounds.levelUp.play();
 }
 
 function playGameOverSound() {
+  if (!sounds) { return; }
   sounds.gameOver.setVolume(0.50);
   sounds.gameOver.play();
 }
@@ -230,7 +295,7 @@ function onHitComboCounterIncrease(points, target, ball, game) {
   game.events.push(new ScoreEvent({
     points: points,
     target: target,
-    delayMs: 750,
+    timeToLiveMs: 750,
     x: target.centerX,
     y: target.centerY,
   }));
@@ -240,6 +305,17 @@ function onHitComboCounterIncrease(points, target, ball, game) {
     timeToLiveMs: 900,
     energy: 2.0,
   }));
+  game.events.push(new BonusEvent({
+    x: ball.position.x,
+    y: ball.position.y,
+    timeToLiveMs: 1200,
+    message: '+1 Combo',
+    fillColor: 'red',
+    initialTextSize: 16,
+    finalTextSize: 32
+  }));
+
+  if (!sounds) { return; }
   _.each(objs, function (obj) {
     if ((game.hitComboCounter >= obj.start) && (game.hitComboCounter <= obj.end)) {
       sounds.loop[obj.loopIndex].setVolume(0.5);
@@ -254,6 +330,8 @@ function onHitComboCounterDecrease(target, ball, game) {
   if (game.hitComboCounter < 0) {
     game.hitComboCounter = 0;
   }
+
+  if (!sounds) { return; }
   _.each(objs, function (obj) {
     if ((game.hitComboCounter >= obj.start) && (game.hitComboCounter <= obj.end)) {
       sounds.loop[obj.loopIndex].setVolume(0.5);
@@ -808,7 +886,7 @@ function drawGame(game) {
     drawHUD(game);
     for (var i = 0; i < game.events.length; i++) {
       var event = game.events[i];
-      drawEvent(event);
+      event.draw(game);
     }
   } else if (game.state == 'GAME_OVER') {
     drawGameOverHUD(game);
@@ -842,32 +920,35 @@ var Target = function(type, opts) {
 ////////////////////////////////////////////////////////////////////////////////
 // main p5 callback functions
 function preload() {
-  console.log('preload...');
-  soundFormats('mp3', 'wav');
-  sounds.wallHit = loadSound('sounds/ball2.wav');
-  sounds.wallHitStronger = loadSound('sounds/rong_wall_hit.mp3');
-  sounds.targetHit = loadSound('sounds/rong_target_hit.mp3');
-  sounds.gameOver = loadSound('sounds/game_over1.wav');
-  sounds.levelUp = loadSound('sounds/rong_target_hit_level_up.mp3');
-  sounds.loop = [
-    loadSound('sounds/loop_1.mp3'),
-    loadSound('sounds/loop_2.mp3'),
-    loadSound('sounds/loop_3.mp3'),
-    loadSound('sounds/loop_4.mp3')
-  ];
+  var ct = (new Date()).getTime();
+  console.log('preloading...');
+  if (GAME_SHOULD_LOAD_SOUNDS) {
+    soundFormats('mp3', 'wav');
+    sounds.wallHit = loadSound('sounds/ball2.wav');
+    sounds.wallHitStronger = loadSound('sounds/rong_wall_hit.mp3');
+    sounds.targetHit = loadSound('sounds/rong_target_hit.mp3');
+    sounds.gameOver = loadSound('sounds/game_over1.wav');
+    sounds.levelUp = loadSound('sounds/rong_target_hit_level_up.mp3');
+    sounds.loop = [
+      loadSound('sounds/loop_1.mp3'),
+      loadSound('sounds/loop_2.mp3'),
+      loadSound('sounds/loop_3.mp3'),
+      loadSound('sounds/loop_4.mp3')
+    ];
+    for (var i = 0; i < sounds.loop.length; i++) {
+      sounds.loop[i].setVolume(0.0);
+      sounds.loop[i].setLoop(true);
+      sounds.loop[i].loop();
+    }
+  }
   fonts.VT323 = loadFont('fonts/VT323-Regular.ttf');
-  fonts.Bungee = loadFont('fonts/Bungee.ttf');
-  console.log('done!');
+  var ft = (new Date()).getTime();
+  var et = ((ft - ct) / 1000).toPrecision(2) + " sec.";
+  console.log(`done! (${et})`);
 }
 
 function setup() {
   console.log('setup');
-
-  for (var i = 0; i < sounds.loop.length; i++) {
-    sounds.loop[i].setVolume(0.0);
-    sounds.loop[i].setLoop(true);
-    sounds.loop[i].loop();
-  }
 
   var initialBallSpeed = 5*random();
   var initialBallVelocity = p5.Vector.random2D();
@@ -944,13 +1025,22 @@ function setup() {
   };
 
   createCanvas(CANVAS_WIDTH, CANVAS_HEIGHT);
-
-  setInterval(function() {
-
-  }, TAIL_DELAY_MS);
 }
 
 function draw() {
   drawGame(game);
   updateGame(game);
 }
+
+var __test = function () {
+  window.evt = new ScoreEvent({
+    points: 456,
+    target: null,
+    timeToLiveMs: 123,
+    x: 42,
+    y: -53,
+  });
+  console.log(window.evt);
+};
+
+__test();
