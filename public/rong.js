@@ -67,7 +67,6 @@ var GameEvent = function () {
 };
 
 GameEvent.prototype.initialize = function (type, opts) {
-  console.log('initializing event of type: ' + type);
   this.type = type;
   this.timeStartedAt = (new Date()).getTime();
   this.counter = 0;
@@ -110,7 +109,6 @@ GameEvent.prototype.process = function (game) {
 };
 
 GameEvent.prototype.draw = function (game) {
-  console.log('GameEvent#draw not implemented');
   return;
 };
 
@@ -197,7 +195,6 @@ ScoreEvent.prototype.process = function (game) {
 };
 
 ScoreEvent.prototype.draw = function (game) {
-  console.log('drawing score event');
   var prefix = '+';
   var suffix = 'pts.';
   var dirH = 0;
@@ -295,7 +292,6 @@ var objs = [
 
 function onHitComboCounterIncrease(points, target, ball, game) {
   game.hitComboCounter += 1;
-  // console.log('points: ' + points);
   game.events.push(new ScoreEvent({
     points: points,
     target: target,
@@ -346,7 +342,7 @@ function onHitComboCounterDecrease(target, ball, game) {
 }
 
 WallHitEvent.prototype.process = function(game) {
-  console.log('This ball hit the ' + this.wall + ' wall: ', this.ball);
+  console.log('The player ball hit the ' + this.wall + ' wall: ', this.ball);
   var hitTargetIndex = null;
   for (var i = 0; i < game.targets.length; i++) {
     var target = game.targets[i];
@@ -410,7 +406,6 @@ WallHitEvent.prototype.process = function(game) {
 ////////////////////////////////////////////////////////////////////////////////
 // updating functions
 function updateTargetAfterHit(target, ball, game) {
-  console.log('Target hit ("'+target.type+'")');
   ball.velocity.mult(BALL_SPEED_BONUS_MULTIPLIER_AFTER_HIT_TARGET);
   var targetIndexToBeRemoved = null;
   for (var i = 0; i < game.targets.length; i++) {
@@ -751,7 +746,7 @@ function drawBall(ball) {
 
 function drawTarget(target) {
   var targetThickness = 5;
-  fill('yellow');
+  fill('white');
   noStroke();
   if (target.type === 'TARGET_TOP') {
     var targetCenterX = GAME_BOUNDS_PADDING + GAME_BOUNDS_WIDTH * target.axis;
