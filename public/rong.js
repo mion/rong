@@ -115,18 +115,31 @@ GameEvent.prototype.draw = function (game) {
 /* BonusEvent
     Created when a new bonus should be displayed on the screen.
 */
+var BONUS_EVENT_DEFAULT_PATH_PERCENTAGE = 0.25;
 var BonusEvent = function (opts) {
   this.initialize('BONUS_EVENT', opts);
   this.message = opts.message;
   this.fillColor = opts.fillColor;
   this.initialTextSize = opts.initialTextSize;
   this.finalTextSize = opts.finalTextSize;
+  this.speed = _.defaultTo(opts.speed, 8.0);
+  this.damping = _.defaultTo(opts.damping, 0.85);
   return this;
 };
 
 BonusEvent.prototype = new GameEvent();
 
 BonusEvent.prototype.process = function (game) {
+  var directionToCenter = p5.Vector.sub(game.center, playerBall.position);
+  var distanceToCenter = directionToCenter.mag();
+  directionToCenter.normalize();
+  var newPosition = p5.Vector.add(
+    createVector(this.x, this.y),
+    p5.Vector.mult(directionToCenter, this.speed)
+  );
+  this.x = newPosition.x;
+  this.y = newPosition.y;
+  this.speed *= this.damping;
   return false;
 };
 
@@ -308,11 +321,12 @@ function onHitComboCounterIncrease(points, target, ball, game) {
   game.events.push(new BonusEvent({
     x: ball.position.x,
     y: ball.position.y,
-    timeToLiveMs: 1200,
-    message: '+1 Combo',
+    timeToLiveMs: 1000,
+    message: `${game.hitComboCounter}x COMBO`,
     fillColor: 'red',
     initialTextSize: 16,
-    finalTextSize: 32
+    finalTextSize: 32,
+    speed: 20
   }));
 
   if (!sounds) { return; }
