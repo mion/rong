@@ -33,7 +33,7 @@ var tail = [];
 var sounds = null;
 var fonts = {};
 var playerBall = null;
-var maximumKinecticEnergy = 45.0;
+var maximumKinecticEnergy = 35.0;
 
 ////////////////////////////////////////////////////////////////////////////////
 // prototypes
@@ -212,6 +212,7 @@ ExplosionEvent.prototype.process = function (game) {
 */
 var ScoreEvent = function (opts) {
   this.initialize('SCORE_EVENT', opts);
+  this.fillColor = opts.fillColor;
   this.points = opts.points;
   this.target = opts.target;
   return this;
@@ -254,7 +255,7 @@ ScoreEvent.prototype.draw = function (game) {
   var textX = this.x + (dirH * (this.percentage() * 30));
   var textY = this.y + (dirV * (this.percentage() * 30));
 
-  fill('yellow');
+  fill(this.fillColor);
   noStroke();
   textFont(fonts.VT323);
   textSize(
@@ -320,11 +321,13 @@ var objs = [
 ];
 
 function onHitComboCounterIncrease(points, target, ball, game) {
+  var kp = _kinecticPercentage(ball);
   game.hitComboCounter += 1;
   game.events.push(new ScoreEvent({
     points: points,
     target: target,
     timeToLiveMs: 750,
+    fillColor: kp > 0.75 ? 'orange' : 'white',
     x: target.centerX,
     y: target.centerY,
   }));
@@ -332,7 +335,7 @@ function onHitComboCounterIncrease(points, target, ball, game) {
     x: ball.position.x,
     y: ball.position.y,
     timeToLiveMs: 900,
-    energy: _kinecticEnergy(ball)
+    energy: (kp > 0.75 ? 2 : 1) * _kinecticEnergy(ball)
   }));
   game.events.push(new BonusEvent({
     x: ball.position.x,
@@ -340,10 +343,23 @@ function onHitComboCounterIncrease(points, target, ball, game) {
     timeToLiveMs: 470,
     message: `${game.hitComboCounter}x COMBO`,
     fillColor: 'rgba(255, 245, 235, 0.85)',
-    initialTextSize: 16,
-    finalTextSize: 28,
+    initialTextSize: 12,
+    finalTextSize: 20,
     speed: 18
   }));
+
+  if (kp > 0.75) {
+    game.events.push(new BonusEvent({
+      x: ball.position.x,
+      y: ball.position.y,
+      timeToLiveMs: 550,
+      message: `SPEED BONUS`,
+      fillColor: 'rgba(255, 165, 5, 0.95)',
+      initialTextSize: 13,
+      finalTextSize: 26,
+      speed: 20
+    }));
+  }
 
   if (!sounds) { return; }
   _.each(objs, function (obj) {
@@ -694,6 +710,7 @@ function drawHUD(game) {
 function drawBounds(game) {
   fill('black');
   stroke('white');
+  strokeWeight(1.0);
   rect(game.bounds.x, game.bounds.y, game.bounds.width, game.bounds.height);
 }
 
@@ -740,7 +757,12 @@ function drawBall(ball) {
     fill(colorStr);
     // console.log('colorStr = ' + colorStr);
   } else if (ball.type === 'player') {
-    fill('white');
+    if (_kinecticPercentage(ball) < 0.75) {
+      fill('white');
+    } else {
+      var perc = (1.0 - _kinecticPercentage(ball)) / 0.25;
+      fill(`rgb(250, ${Math.round(160 + 50 * perc)}, 5)`);
+    }
   } else {
     fill('gray');
   }
@@ -758,11 +780,13 @@ function drawBall(ball) {
     }
     var K = kineticEnergy / maximumKinecticEnergy;
 
-    var r = Math.round(Math.max(255, 55 + (100 * random()) + (100 * K)));
-    var g = Math.round(Math.max(255, 55 + (100 * random()) + (100 * K)));
-    var b = Math.round(Math.max(255, 55 + (100 * random()) + (100 * K)));
+    var r = Math.round(250);
+    var g = Math.round(160 + 50 * K);
+    var b = Math.round(5);
     strokeWeight(1 + (10 * K));
-    stroke(`rgba(${r},${g},${b},${K / 2})`);
+    stroke(`rgba(${r},${g},${b},${K / 2.5})`);
+    // var perc = (1.0 - _kinecticPercentage(ball)) / 0.25;
+    // stroke(`rgb(250, ${Math.round(160 + 50 * perc)}, 5, ${perc.toPrecision(2)})`);
 
     ellipse(
       ball.position.x,
@@ -852,9 +876,15 @@ function drawGameOverHUD(game) {
 function drawTail(game) {
   for (var i = 0; i < tail.length; i++) {
     var p = ((i + 1) / tail.length);
-    var clr = Math.round(255 * p);
-    stroke(`rgba(${clr},${clr},${clr}, ${(p / 2).toPrecision(2)})`);
-    noFill();
+    if (_kinecticPercentage(playerBall) < 0.75) {
+      var clr = Math.round(255 * p);
+      stroke(`rgba(${clr},${clr},${clr}, ${(p / 2).toPrecision(2)})`);
+      noFill();
+    } else {
+      noStroke();
+      fill('rgba(250, 165, 5, ' + p.toPrecision(2) + ')');
+      // fill(`rgba(250, ${Math.round(160 + 50 * perc)}, 5, ${(p / 2).toPrecision(2)})`);
+    }
     ellipse(tail[i].x, tail[i].y, (p * TAIL_RADIUS));
   }
 }
