@@ -173,6 +173,7 @@ function targetSizeForLevel(level) {
 var ExplosionEvent = function(opts) {
   this.initialize('EXPLOSION_EVENT', opts);
   this.energy = opts.energy;
+  this.isBonus = _.defaultTo(opts.isBonus, false);
   return this;
 };
 
@@ -181,6 +182,7 @@ ExplosionEvent.prototype = new GameEvent();
 ExplosionEvent.prototype.process = function (game) {
   var ttl = this.timeToLiveMs;
   var p = _kinecticPercentage(playerBall);
+  var isBonus = this.isBonus;
   _.times(Math.round(20 + (0.80 * p * EXPLOSION_PARTICLES_MULTIPLIER)), function (n) {
     var speed = playerBall.velocity.mag();
     var accel = playerBall.acceleration.mag();
@@ -198,6 +200,7 @@ ExplosionEvent.prototype.process = function (game) {
         playerBall.position.x,
         playerBall.position.y
       ),
+      isBonus: isBonus,
       acceleration: p5.Vector.mult(dir, (p + 1) * (p + 1) * 15 + random() * 10),
       velocity: p5.Vector.mult(dir, p * 7.25 + random() * 1.25),
       radius: 0.75 + (random() * 0.75)
@@ -338,8 +341,23 @@ function onHitComboCounterIncrease(points, target, ball, game) {
     y: ball.position.y,
     timeToLiveMs: 900,
     energy: (kp > 0.75 ? 2 : 1) * _kinecticEnergy(ball),
-    initialKinecticPercentage: _kinecticPercentage(ball)
+    initialKinecticPercentage: _kinecticPercentage(ball),
+    isBonus: target.isBonus
   }));
+
+  if (target.isBonus) {
+    game.events.push(new BonusEvent({
+      x: ball.position.x,
+      y: ball.position.y,
+      timeToLiveMs: 510,
+      message: `BONUS HIT`,
+      fillColor: 'rgba(60, 190, 255, 0.95)',
+      initialTextSize: 14,
+      finalTextSize: 28,
+      speed: 24
+    }));
+  }
+
   game.events.push(new BonusEvent({
     x: ball.position.x,
     y: ball.position.y,
@@ -496,14 +514,16 @@ function updateTargetAfterHit(target, ball, game) {
         'TARGET_RIGHT',
         'TARGET_BOTTOM'
       ];
+      var TARGET_BONUS_PROB = 0.35 + Math.max(0.10, game.level * 0.01);
       _.each(types, function (type) {
         var targetsToBeCreated = game.level;
         var maxTargetSize = 1.0 / targetsToBeCreated;
         for (var i = 0; i < targetsToBeCreated; i++) {
+          var shouldBeBonus = random() < TARGET_BONUS_PROB;
           game.targets.push(new Target(type, {
             size: maxTargetSize,
             axis: (i * maxTargetSize) + (maxTargetSize / 2),
-            fillColor: 'white'
+            isBonus: shouldBeBonus
           }));
         }
       });
@@ -773,7 +793,9 @@ function drawBall(ball) {
     var currTime = (new Date()).getTime();
     var isDead = (currTime - ball.createdAt) >= ball.timeToLiveMs;
     var p = isDead ? '0.0' : (1.0 - ((currTime - ball.createdAt) / ball.timeToLiveMs)).toPrecision(2);
-    if (ball.initialKinecticPercentage < 0.75) {
+    if (ball.isBonus) {
+      fill('rgba(60,190,255,'+random().toPrecision(2)+')');
+    } else if (ball.initialKinecticPercentage < 0.75) {
       fill('rgba(255,255,255,'+random().toPrecision(2)+')');
     } else {
       var colorStr = 'rgba(255,155,5,'+random().toPrecision(2)+')';
@@ -1004,6 +1026,7 @@ var nextTargetId = 0;
 var Target = function(type, opts) {
   this.id = nextTargetId++;
   this.type = type;
+  this.isBonus = _.defaultTo(opts.isBonus, false);
   this.axis = _.defaultTo(opts.axis, 0.5);
   this.size = _.defaultTo(opts.size, 0.25);
   this.timeToLiveMs = _.defaultTo(opts.timeToLiveMs, Infinity);
@@ -1041,7 +1064,8 @@ Target.prototype.draw = function (game) {
     , w = null
     , h = null
     , x = null
-    , y = null;
+    , y = null
+    ;
 
   if (this.type === 'TARGET_TOP') {
     x = bx + W * (a - (s / 2));
@@ -1071,7 +1095,16 @@ Target.prototype.draw = function (game) {
   var GFX_TARGET_ROUNDED_CORNER_RADIUS = 0;
 
   noStroke();
-  fill(this.fillColor);
+  if (this.isBonus) {
+    var red = Math.round(100 * random())
+    , green = 145 + Math.round(70 * random())
+    , blue = 255
+    , alpha = random(0.95, 0.99).toPrecision(2)
+    fill(`rgba(${red}, ${green}, ${blue}, ${alpha})`);
+  } else {
+    fill(this.fillColor);
+  }
+
   rect(x, y, w, h, GFX_TARGET_ROUNDED_CORNER_RADIUS);
 };
 
