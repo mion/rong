@@ -190,6 +190,7 @@ ExplosionEvent.prototype.process = function (game) {
     dir.normalize();
     var ball = {
       type: 'particle',
+      initialKinecticPercentage: _kinecticPercentage(playerBall),
       createdAt: (new Date()).getTime(),
       timeToLiveMs: 750 + random() * 350,
       mass: 0.01,
@@ -336,7 +337,8 @@ function onHitComboCounterIncrease(points, target, ball, game) {
     x: ball.position.x,
     y: ball.position.y,
     timeToLiveMs: 900,
-    energy: (kp > 0.75 ? 2 : 1) * _kinecticEnergy(ball)
+    energy: (kp > 0.75 ? 2 : 1) * _kinecticEnergy(ball),
+    initialKinecticPercentage: _kinecticPercentage(ball)
   }));
   game.events.push(new BonusEvent({
     x: ball.position.x,
@@ -754,18 +756,24 @@ function drawBall(ball) {
     var currTime = (new Date()).getTime();
     var isDead = (currTime - ball.createdAt) >= ball.timeToLiveMs;
     var p = isDead ? '0.0' : (1.0 - ((currTime - ball.createdAt) / ball.timeToLiveMs)).toPrecision(2);
-    var colorStr = 'rgba(255,255,255,'+p+')';
-    fill(colorStr);
+    if (ball.initialKinecticPercentage < 0.75) {
+      fill('rgba(255,255,255,'+random().toPrecision(2)+')');
+    } else {
+      var colorStr = 'rgba(255,155,5,'+random().toPrecision(2)+')';
+      fill(colorStr);
+    }
     // console.log('colorStr = ' + colorStr);
   } else if (ball.type === 'player') {
     if (_kinecticPercentage(ball) < 0.75) {
-      fill('white');
-    } else {
+      fill('rgba(255,255,255,'+random().toPrecision(2)+')');
+    } else if (_kinecticPercentage(ball) < 0.90) {
       var perc = (1.0 - _kinecticPercentage(ball)) / 0.25;
       fill(`rgb(250, ${Math.round(160 + 50 * perc)}, 5)`);
+    } else {
+      fill('rgba(250,175,5,'+random().toPrecision(2)+')');
     }
   } else {
-    fill('gray');
+    fill('rgba(255,255,255,0.35)');
   }
 
   noStroke();
@@ -1042,7 +1050,7 @@ function setup() {
   var balls = _.times(200, function (n) {
     return {
       type: 'decoration',
-      mass: 0.01,
+      mass: 0.05,
       position: createVector(
         GAME_BOUNDS_PADDING + 5 + (random() * GAME_BOUNDS_WIDTH),
         GAME_BOUNDS_PADDING + 5 + (random() * GAME_BOUNDS_HEIGHT)
@@ -1052,7 +1060,7 @@ function setup() {
         random(),
         random()
       ),
-      radius: 0.25 + (random() * 0.75)
+      radius: 0.3 + (random() * 0.65)
     };
   }).concat(playerBall);
 
@@ -1081,7 +1089,7 @@ function setup() {
     ),
     balls: balls,
     pad: {
-      mass: 4.1,
+      mass: 3.8,
       position: createVector(
         GAME_BOUNDS_PADDING + (GAME_BOUNDS_WIDTH / 2),
         GAME_BOUNDS_PADDING + (GAME_BOUNDS_HEIGHT / 2)
