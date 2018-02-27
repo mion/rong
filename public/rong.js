@@ -321,12 +321,12 @@ function onHitComboCounterIncrease(points, target, ball, game) {
   game.events.push(new BonusEvent({
     x: ball.position.x,
     y: ball.position.y,
-    timeToLiveMs: 1000,
+    timeToLiveMs: 470,
     message: `${game.hitComboCounter}x COMBO`,
-    fillColor: 'red',
+    fillColor: 'rgba(255, 245, 235, 0.85)',
     initialTextSize: 16,
-    finalTextSize: 32,
-    speed: 20
+    finalTextSize: 28,
+    speed: 18
   }));
 
   if (!sounds) { return; }
@@ -685,28 +685,35 @@ function drawBounds(game) {
 function drawBall(ball) {
   // draw velocity vector
   if (ball.type === 'player') {
-    if (keyIsDown(ESCAPE) || keyIsDown(SHIFT)) {
-      stroke('rgba(255,255,255,0.75)');
-    } else {
-      noStroke();
-    }
-    var pos = ball.position;
-    var vel = ball.velocity;
-    var head = p5.Vector.add(pos, p5.Vector.mult(vel, BALL_ARROW_SIZE_CONSTANT));
-    var left = vel.copy();
-    left.normalize();
-    left.mult(BALL_ARROW_HEAD_CONSTANT);
-    left.rotate(-(3/4)*PI);
-    left.add(head);
-    var right = vel.copy();
-    right.normalize();
-    right.mult(BALL_ARROW_HEAD_CONSTANT);
-    right.rotate(+(3/4)*PI);
-    right.add(head);
+    // if (keyIsDown(ESCAPE) || keyIsDown(SHIFT)) {
+    //   stroke('rgba(255,255,255,0.75)');
+    // } else {
+    //   noStroke();
+    // }
+    // var pos = ball.position;
+    // var vel = ball.velocity;
 
-    line(pos.x, pos.y, head.x, head.y);
-    line(head.x, head.y, left.x, left.y);
-    line(head.x, head.y, right.x, right.y);
+    // var head = p5.Vector.add(pos, vel);
+    // var left = vel.copy();
+    // left.normalize();
+    // left.mult(BALL_ARROW_HEAD_CONSTANT);
+    // left.rotate(-(3/4)*PI);
+    // left.add(head);
+    // var right = vel.copy();
+    // right.normalize();
+    // right.mult(BALL_ARROW_HEAD_CONSTANT);
+    // right.rotate(+(3/4)*PI);
+    // right.add(head);
+    //
+    // triangle(
+    //   head.x, head.y,
+    //   left.x, left.y,
+    //   right.x, right.y
+    // );
+
+    // line(pos.x, pos.y, head.x, head.y);
+    // line(head.x, head.y, left.x, left.y);
+    // line(head.x, head.y, right.x, right.y);
   }
 
   // draw the actuall ball
@@ -725,26 +732,26 @@ function drawBall(ball) {
 
   noStroke();
   if (ball.type === 'player') {
-    // var KINECTIC_CONSTANT = 0.10;
+    var KINECTIC_CONSTANT = 0.10;
     var kineticEnergy =
       playerBall.mass *
       Math.pow(playerBall.velocity.mag(), 2);
     if (kineticEnergy > maximumKinecticEnergy) {
       maximumKinecticEnergy = kineticEnergy;
+      console.log('max ke = ', maximumKinecticEnergy);
     }
     var K = kineticEnergy / maximumKinecticEnergy;
 
-    var power = K * 55;
-    var r = Math.round(200 + power);
-    var g = Math.round(50 + power);
-    var b = Math.round(power);
-    strokeWeight(1 + K * 3);
-    stroke(`rgba(${r},${g},${b},${K})`);
+    var r = Math.round(Math.max(255, 55 + (100 * random()) + (100 * K)));
+    var g = Math.round(Math.max(255, 55 + (100 * random()) + (100 * K)));
+    var b = Math.round(Math.max(255, 55 + (100 * random()) + (100 * K)));
+    strokeWeight(1 + (10 * K));
+    stroke(`rgba(${r},${g},${b},${K / 2})`);
 
     ellipse(
       ball.position.x,
       ball.position.y,
-      (2 * ball.radius) + (K * 3)
+      (1 * ball.radius) + (K * ball.radius)
     );
   } else {
     ellipse(ball.position.x, ball.position.y, 2 * ball.radius);
@@ -796,17 +803,17 @@ function drawTarget(target) {
 }
 
 function drawPad(game) {
+  noFill();
+  var BEAM_ALPHA_ON = 0.0;
+  var BEAM_ALPHA_OFF = 0.0;
   if (keyIsDown(SHIFT)) {
-    fill('orange');
-    stroke('orange');
+    stroke(`rgba(255, 255, 255, ${BEAM_ALPHA_ON})`);
     line(game.pad.position.x, game.pad.position.y, playerBall.position.x, playerBall.position.y);
   } else if (keyIsDown(ESCAPE)) {
-    fill('purple');
-    stroke('purple');
+    stroke(`rgba(255, 255, 255, ${BEAM_ALPHA_ON})`);
     line(game.pad.position.x, game.pad.position.y, playerBall.position.x, playerBall.position.y);
   } else {
-    fill('gray');
-    stroke('rgba(255, 255, 255, 0.15)');
+    stroke(`rgba(255, 255, 255, ${BEAM_ALPHA_OFF})`);
     line(game.pad.position.x, game.pad.position.y, playerBall.position.x, playerBall.position.y);
   }
   fill('white');
