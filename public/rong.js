@@ -24,13 +24,13 @@ var PAD_SPEED = 0.40;
 var PAD_DAMPING = 0.95;
 var PAD_MASS_INCREASE_MULTIPLIER = 0.05;
 var PAD_RADIUS_INCREASE_MULTIPLIER = 0.05;
-var TAIL_SIZE = 5;
+var TAIL_SIZE = 25;
 var TAIL_DELAY_MS = 50;
 var TAIL_RADIUS = 5.0;
 var EXPLOSION_PARTICLES_MULTIPLIER = 100;
 
 var game = null;
-var tail = new Array(TAIL_SIZE);
+var tail = [];
 var sounds = null;
 var fonts = {};
 var playerBall = null;
@@ -521,6 +521,12 @@ function updateBall(ball, game) {
   }
 
   if (ball.type === 'player') {
+    // update tail
+    tail.push(ball.position.copy());
+    if (tail.length > TAIL_SIZE) {
+      tail.shift();
+    }
+    // check collision
     var nextBallPos = p5.Vector.add(ball.position, ball.velocity);
     var distanceToPad = nextBallPos.dist(pad.position);
     var minimumDistanceForCollision = ball.radius + pad.radius;
@@ -822,9 +828,11 @@ function drawGameOverHUD(game) {
 
 function drawTail(game) {
   for (var i = 0; i < tail.length; i++) {
-    fill('white');
-    noStroke();
-    ellipse(tail[i].x, tail[i].y, TAIL_RADIUS);
+    var p = ((i + 1) / tail.length);
+    var clr = Math.round(255 * p);
+    stroke(`rgba(${clr},${clr},${clr}, ${(p / 2).toPrecision(2)})`);
+    noFill();
+    ellipse(tail[i].x, tail[i].y, (p * TAIL_RADIUS));
   }
 }
 
@@ -995,13 +1003,8 @@ function setup() {
     };
   }).concat(playerBall);
 
-  for (var i = 0; i < TAIL_SIZE; i++) {
-    tail[i] = {x: 0, y: 0};
-  }
-
   game = {
     level: 1,
-    tailSize: TAIL_SIZE,
     timeLevelStartedAt: (new Date()).getTime(),
     hitComboCounter: 0,
     events: [],
