@@ -22,22 +22,37 @@ var BALL_ARROW_SIZE_CONSTANT = 20.0;
 var BALL_ARROW_HEAD_CONSTANT = 7.0;
 var PAD_SPEED = 0.40;
 var PAD_DAMPING = 0.95;
-var PAD_MASS_INCREASE_MULTIPLIER = 0.05;
 var PAD_RADIUS_INCREASE_MULTIPLIER = 0.05;
 var TAIL_SIZE = 25;
 var TAIL_DELAY_MS = 50;
 var TAIL_RADIUS = 5.0;
-var EXPLOSION_PARTICLES_MULTIPLIER = 100;
+var EXPLOSION_PARTICLES_MULTIPLIER = 175;
 
 var game = null;
 var tail = [];
 var sounds = null;
 var fonts = {};
 var playerBall = null;
-var maximumKinecticEnergy = 1.0;
+var maximumKinecticEnergy = 45.0;
 
 ////////////////////////////////////////////////////////////////////////////////
 // prototypes
+
+var _kinecticEnergy = function (ball) {
+  var kineticEnergy =
+    playerBall.mass *
+    Math.pow(playerBall.velocity.mag(), 2);
+  if (kineticEnergy > maximumKinecticEnergy) {
+    // maximumKinecticEnergy = kineticEnergy;
+    kineticEnergy = maximumKinecticEnergy;
+    console.log('max ke = ', maximumKinecticEnergy);
+  }
+  return kineticEnergy;
+};
+
+var _kinecticPercentage = function (ball) {
+   return (_kinecticEnergy(ball) / maximumKinecticEnergy);
+};
 
 /* GameEvent
     The base class for all events. */
@@ -166,7 +181,8 @@ ExplosionEvent.prototype = new GameEvent();
 
 ExplosionEvent.prototype.process = function (game) {
   var ttl = this.timeToLiveMs;
-  _.times(Math.round(this.energy * EXPLOSION_PARTICLES_MULTIPLIER), function(n) {
+  var p = _kinecticPercentage(playerBall);
+  _.times(Math.round(20 + (0.80 * p * EXPLOSION_PARTICLES_MULTIPLIER)), function (n) {
     var speed = playerBall.velocity.mag();
     var accel = playerBall.acceleration.mag();
     var dir = playerBall.velocity.copy();
@@ -176,14 +192,14 @@ ExplosionEvent.prototype.process = function (game) {
     var ball = {
       type: 'particle',
       createdAt: (new Date()).getTime(),
-      timeToLiveMs: ttl,
+      timeToLiveMs: 750 + random() * 350,
       mass: 0.01,
       position: createVector(
         playerBall.position.x,
         playerBall.position.y
       ),
-      acceleration: p5.Vector.mult(dir, random() * 5 * accel),
-      velocity: p5.Vector.mult(dir, random() * 2 * speed),
+      acceleration: p5.Vector.mult(dir, (p + 1) * (p + 1) * 15 + random() * 10),
+      velocity: p5.Vector.mult(dir, p * 7.25 + random() * 1.25),
       radius: 0.75 + (random() * 0.75)
     };
     game.balls.push(ball);
@@ -316,7 +332,7 @@ function onHitComboCounterIncrease(points, target, ball, game) {
     x: ball.position.x,
     y: ball.position.y,
     timeToLiveMs: 900,
-    energy: 2.0,
+    energy: _kinecticEnergy(ball)
   }));
   game.events.push(new BonusEvent({
     x: ball.position.x,
@@ -445,7 +461,6 @@ function updateTargetAfterHit(target, ball, game) {
       console.log('level up');
       playLevelUpSound();
       game.pad.radius *= 1.0 + PAD_RADIUS_INCREASE_MULTIPLIER;
-      game.pad.mass *= 1.0 + PAD_MASS_INCREASE_MULTIPLIER;
       game.level += 1;
       game.timeLevelStartedAt = (new Date()).getTime();
       var types = ['TARGET_TOP', 'TARGET_LEFT', 'TARGET_RIGHT', 'TARGET_BOTTOM'];
@@ -721,7 +736,7 @@ function drawBall(ball) {
     var currTime = (new Date()).getTime();
     var isDead = (currTime - ball.createdAt) >= ball.timeToLiveMs;
     var p = isDead ? '0.0' : (1.0 - ((currTime - ball.createdAt) / ball.timeToLiveMs)).toPrecision(2);
-    var colorStr = 'rgba(255,255,0,'+p+')';
+    var colorStr = 'rgba(255,255,255,'+p+')';
     fill(colorStr);
     // console.log('colorStr = ' + colorStr);
   } else if (ball.type === 'player') {
@@ -737,7 +752,8 @@ function drawBall(ball) {
       playerBall.mass *
       Math.pow(playerBall.velocity.mag(), 2);
     if (kineticEnergy > maximumKinecticEnergy) {
-      maximumKinecticEnergy = kineticEnergy;
+      // maximumKinecticEnergy = kineticEnergy;
+      kineticEnergy = maximumKinecticEnergy;
       console.log('max ke = ', maximumKinecticEnergy);
     }
     var K = kineticEnergy / maximumKinecticEnergy;
@@ -1035,14 +1051,14 @@ function setup() {
     ),
     balls: balls,
     pad: {
-      mass: 2.5,
+      mass: 4.1,
       position: createVector(
         GAME_BOUNDS_PADDING + (GAME_BOUNDS_WIDTH / 2),
         GAME_BOUNDS_PADDING + (GAME_BOUNDS_HEIGHT / 2)
       ),
       acceleration: createVector(0, 0),
       velocity: createVector(0, 0),
-      radius: 15
+      radius: 9
     },
     events: []
   };
