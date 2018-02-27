@@ -166,7 +166,6 @@ BonusEvent.prototype.draw = function (game) {
   text(this.message, this.x, this.y);
 };
 
-// TODO move to Target proto
 function targetSizeForLevel(level) {
   return 0.65 * Math.pow(0.9, level);
 }
@@ -476,18 +475,21 @@ function updateTargetAfterHit(target, ball, game) {
     var SCORE_TIME_CONSTANT = 1 / (0.9 * 4);
     var currentTime = (new Date()).getTime();
     var timeElapsedSeconds = Math.round((currentTime - game.timeLevelStartedAt) / 1000);
+
     var targetHitPointsWorth =
       SCORE_BASE +
       (SCORE_SPEED_BONUS * p5.Vector.mag(ball.velocity)) +
       (SCORE_TIME_BONUS * (1 / (1 + timeElapsedSeconds) * SCORE_TIME_CONSTANT));
     game.score += Math.round(targetHitPointsWorth);
+
     if (game.targets.length === 0) {
       console.log('level up');
       playLevelUpSound();
       game.pad.radius *= 1.0 + PAD_RADIUS_INCREASE_MULTIPLIER;
       game.level += 1;
       game.timeLevelStartedAt = (new Date()).getTime();
-      // create four basic targets
+
+      // create easy targets
       var types = [
         'TARGET_TOP',
         'TARGET_LEFT',
@@ -495,15 +497,17 @@ function updateTargetAfterHit(target, ball, game) {
         'TARGET_BOTTOM'
       ];
       _.each(types, function (type) {
-        var size = targetSizeForLevel(game.level);
-        var mainTarget = new Target(type, {
-          size: size,
-          axis: (size / 2) + (random() * (1.0 - size)),
-          fillColor: 'white'
-        });
-        game.targets.push(mainTarget);
-        var countBonusTargets = (2 * game.level);
+        var targetsToBeCreated = game.level;
+        var maxTargetSize = 1.0 / targetsToBeCreated;
+        for (var i = 0; i < targetsToBeCreated; i++) {
+          game.targets.push(new Target(type, {
+            size: maxTargetSize,
+            axis: (i * maxTargetSize) + (maxTargetSize / 2),
+            fillColor: 'white'
+          }));
+        }
       });
+      console.log('New targets created:', game.targets);
     }
     return targetHitPointsWorth;
   } else {
@@ -1064,9 +1068,11 @@ Target.prototype.draw = function (game) {
     throw('unknown target type: ' + this.type);
   }
 
+  var GFX_TARGET_ROUNDED_CORNER_RADIUS = 0;
+
   noStroke();
   fill(this.fillColor);
-  rect(x, y, w, h);
+  rect(x, y, w, h, GFX_TARGET_ROUNDED_CORNER_RADIUS);
 };
 
 ////////////////////////////////////////////////////////////////////////////////
