@@ -16,6 +16,7 @@ var GAME_BOUNDS_WIDTH = CANVAS_WIDTH - 2*GAME_BOUNDS_PADDING;
 var GAME_BOUNDS_HEIGHT = CANVAS_HEIGHT - 2*GAME_BOUNDS_PADDING;
 var GAME_GRAVITY_CONSTANT = 37.0;
 var GAME_SHOULD_LOAD_SOUNDS = false;
+var GAME_POINTS_BASE_TARGET = 1000;
 var BALL_SPEED_BONUS_MULTIPLIER_AFTER_HIT_TARGET = 0.85;
 var BALL_SPEED_WALL_DAMPING_MULTIPLIER = 0.95;
 var BALL_ARROW_SIZE_CONSTANT = 20.0;
@@ -454,6 +455,10 @@ WallHitEvent.prototype.process = function(game) {
 
 ////////////////////////////////////////////////////////////////////////////////
 // updating functions
+function createTarget(bounds) {
+
+}
+
 function updateTargetAfterHit(target, ball, game) {
   ball.velocity.mult(BALL_SPEED_BONUS_MULTIPLIER_AFTER_HIT_TARGET);
   var targetIndexToBeRemoved = null;
@@ -482,14 +487,22 @@ function updateTargetAfterHit(target, ball, game) {
       game.pad.radius *= 1.0 + PAD_RADIUS_INCREASE_MULTIPLIER;
       game.level += 1;
       game.timeLevelStartedAt = (new Date()).getTime();
-      var types = ['TARGET_TOP', 'TARGET_LEFT', 'TARGET_RIGHT', 'TARGET_BOTTOM'];
+      // create four basic targets
+      var types = [
+        'TARGET_TOP',
+        'TARGET_LEFT',
+        'TARGET_RIGHT',
+        'TARGET_BOTTOM'
+      ];
       _.each(types, function (type) {
         var size = targetSizeForLevel(game.level);
-        var target = new Target(type, {
+        var mainTarget = new Target(type, {
           size: size,
-          axis: (size / 2) + (random() * (1.0 - size))
+          axis: (size / 2) + (random() * (1.0 - size)),
+          fillColor: 'white'
         });
-        game.targets.push(target);
+        game.targets.push(mainTarget);
+        var countBonusTargets = (2 * game.level);
       });
     }
     return targetHitPointsWorth;
@@ -804,8 +817,10 @@ function drawBall(ball) {
   } else {
     ellipse(ball.position.x, ball.position.y, 2 * ball.radius);
   }
+
   // draw the tail
-  /*
+  /* * * DEAD
+
   if (tail.length >= TAIL_SIZE) {
     tail.shift();
   }
@@ -816,8 +831,11 @@ function drawBall(ball) {
     stroke('white');
     ellipse(point.x, point.y, 2.0);
   }
-  */
+
+  * * */
 }
+
+/* * * DEAD
 
 function drawTarget(target) {
   var targetThickness = 5;
@@ -849,6 +867,8 @@ function drawTarget(target) {
     throw('unknown target type: ' + target.type);
   }
 }
+
+* * */
 
 function drawPad(game) {
   noFill();
@@ -963,7 +983,7 @@ function drawGame(game) {
     drawBall(playerBall);
     for (var i = 0; i < game.targets.length; i++) {
       var target = game.targets[i];
-      drawTarget(target);
+      target.draw(game);
     }
     drawHUD(game);
     for (var i = 0; i < game.events.length; i++) {
@@ -980,8 +1000,11 @@ var nextTargetId = 0;
 var Target = function(type, opts) {
   this.id = nextTargetId++;
   this.type = type;
-  this.axis = opts.axis;
-  this.size = opts.size;
+  this.axis = _.defaultTo(opts.axis, 0.5);
+  this.size = _.defaultTo(opts.size, 0.25);
+  this.timeToLiveMs = _.defaultTo(opts.timeToLiveMs, Infinity);
+  this.fillColor = _.defaultTo(opts.fillColor, 'white');
+  this.pointsWorth = _.defaultTo(opts.pointsWorth, GAME_POINTS_BASE_TARGET);
   if (type === 'TARGET_TOP' || type === 'TARGET_BOTTOM') {
     this.centerX = GAME_BOUNDS_PADDING + GAME_BOUNDS_WIDTH * opts.axis;
     this.sizeX = GAME_BOUNDS_WIDTH * opts.size;
@@ -997,6 +1020,53 @@ var Target = function(type, opts) {
     this.centerX = (type === 'TARGET_LEFT') ? 0 : GAME_BOUNDS_PADDING + GAME_BOUNDS_WIDTH;
   }
   return this;
+};
+
+Target.prototype.thickness = function () {
+  return 5.0;
+};
+
+Target.prototype.draw = function (game) {
+  var bx = GAME_BOUNDS_PADDING
+    , by = GAME_BOUNDS_PADDING
+    , W = GAME_BOUNDS_WIDTH
+    , H = GAME_BOUNDS_HEIGHT
+    , t = this.thickness()
+    , a = this.axis
+    , s = this.size
+    , w = null
+    , h = null
+    , x = null
+    , y = null;
+
+  if (this.type === 'TARGET_TOP') {
+    x = bx + W * (a - (s / 2));
+    y = by - t / 2;
+    w = W * s;
+    h = t;
+  } else if (this.type === 'TARGET_RIGHT') {
+    x = bx + W - (t / 2);
+    y = by + H * (a - (s / 2));
+    w = t;
+    h = H * s;
+  } else if (this.type === 'TARGET_BOTTOM') {
+    x = bx + W * (a - (s / 2));
+    y = by + H - (t / 2);
+    w = W * s;
+    h = t;
+  } else if (this.type === 'TARGET_LEFT') {
+    x = bx - (t / 2);
+    y = by + H * (a - (s / 2));
+    w = t;
+    h = H * s;
+  } else {
+    console.error('Target has unknown type: ', this);
+    throw('unknown target type: ' + this.type);
+  }
+
+  noStroke();
+  fill(this.fillColor);
+  rect(x, y, w, h);
 };
 
 ////////////////////////////////////////////////////////////////////////////////
