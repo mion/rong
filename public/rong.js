@@ -39,6 +39,14 @@ var maximumKinecticEnergy = 35.0;
 ////////////////////////////////////////////////////////////////////////////////
 // prototypes
 
+var _targetsForLevel = function (level) {
+  return level;
+};
+
+var _ttlForTarget = function (level) {
+  return 12000 + 1000 * (4 * _targetsForLevel(level));
+};
+
 var _kinecticEnergy = function (ball) {
   var kineticEnergy =
     playerBall.mass *
@@ -500,7 +508,8 @@ function updateTargetAfterHit(target, ball, game) {
       (SCORE_TIME_BONUS * (1 / (1 + timeElapsedSeconds) * SCORE_TIME_CONSTANT));
     game.score += Math.round(targetHitPointsWorth);
 
-    if (game.targets.length === 0) {
+    if (_.filter(game.targets, function (t) { return !t.isBonus; }).length === 0) {
+      game.targets = [];
       console.log('level up');
       playLevelUpSound();
       game.pad.radius *= 1.0 + PAD_RADIUS_INCREASE_MULTIPLIER;
@@ -516,13 +525,14 @@ function updateTargetAfterHit(target, ball, game) {
       ];
       var TARGET_BONUS_PROB = 0.35 + Math.max(0.10, game.level * 0.01);
       _.each(types, function (type) {
-        var targetsToBeCreated = game.level;
+        var targetsToBeCreated = _targetsForLevel(game.level);
         var maxTargetSize = 1.0 / targetsToBeCreated;
         for (var i = 0; i < targetsToBeCreated; i++) {
           var shouldBeBonus = random() < TARGET_BONUS_PROB;
           game.targets.push(new Target(type, {
             size: maxTargetSize,
             axis: (i * maxTargetSize) + (maxTargetSize / 2),
+            timeToLiveMs: shouldBeBonus ? random(3000, 9500) : _ttlForTarget(game.level),
             isBonus: shouldBeBonus
           }));
         }
@@ -703,10 +713,29 @@ function updateBalls(game) {
   }
 }
 
+function updateTargets(game) {
+  var indexesToBeRemoved = [];
+  for (var i = 0; i < game.targets.length; i++) {
+    var target = game.targets[i];
+    if (target.shouldBeDead()) {
+      indexesToBeRemoved.push(i);
+    }
+  }
+  while (indexesToBeRemoved.length > 0) {
+    var index = indexesToBeRemoved.pop();
+    game.targets.splice(index, 1);
+  }
+}
+
 function updateGame(game) {
   updateEvents(game);
   updateBalls(game);
   updatePad(game);
+  updateTargets(game);
+  if (game.targets.length === 0) {
+    game.state = 'GAME_OVER';
+    playGameOverSound();
+  }
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1026,6 +1055,7 @@ var nextTargetId = 0;
 var Target = function(type, opts) {
   this.id = nextTargetId++;
   this.type = type;
+  this.createdAt = (new Date()).getTime();
   this.isBonus = _.defaultTo(opts.isBonus, false);
   this.axis = _.defaultTo(opts.axis, 0.5);
   this.size = _.defaultTo(opts.size, 0.25);
@@ -1049,8 +1079,25 @@ var Target = function(type, opts) {
   return this;
 };
 
+Target.prototype.percentage = function () {
+  if (this.timeToLiveMs === Infinity) {
+    return 0.0;
+  } else {
+    return this.timeAlive() / this.timeToLiveMs;
+  }
+};
+
+Target.prototype.timeAlive = function () {
+  var currentTime = (new Date()).getTime();
+  return currentTime - this.createdAt;
+};
+
+Target.prototype.shouldBeDead = function () {
+  return this.timeAlive() > this.timeToLiveMs;
+};
+
 Target.prototype.thickness = function () {
-  return 5.0;
+  return this.isBonus ? 7.5 : 10.0;
 };
 
 Target.prototype.draw = function (game) {
@@ -1058,7 +1105,7 @@ Target.prototype.draw = function (game) {
     , by = GAME_BOUNDS_PADDING
     , W = GAME_BOUNDS_WIDTH
     , H = GAME_BOUNDS_HEIGHT
-    , t = this.thickness()
+    , t = Math.max(1.0, this.thickness() * (1.0 - this.percentage()))
     , a = this.axis
     , s = this.size
     , w = null
@@ -1214,6 +1261,6 @@ function setup() {
 }
 
 function draw() {
-  drawGame(game);
   updateGame(game);
+  drawGame(game);
 }
