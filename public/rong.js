@@ -45,7 +45,6 @@ var _kinecticEnergy = function (ball) {
   if (kineticEnergy > maximumKinecticEnergy) {
     // maximumKinecticEnergy = kineticEnergy;
     kineticEnergy = maximumKinecticEnergy;
-    console.log('max ke = ', maximumKinecticEnergy);
   }
   return kineticEnergy;
 };
@@ -152,8 +151,8 @@ BonusEvent.prototype.process = function (game) {
     createVector(this.x, this.y),
     p5.Vector.mult(directionToCenter, this.speed)
   );
-  this.x = newPosition.x;
-  this.y = newPosition.y;
+  this.x = newPosition.x + (-2 * random()) + (2 * random());
+  this.y = newPosition.y + (-2 * random()) + (2 * random());
   this.speed *= this.damping;
   return false;
 };
@@ -215,6 +214,7 @@ var ScoreEvent = function (opts) {
   this.fillColor = opts.fillColor;
   this.points = opts.points;
   this.target = opts.target;
+  this.textSize = _.defaultTo(opts.textSize, 11);
   return this;
 };
 
@@ -259,7 +259,7 @@ ScoreEvent.prototype.draw = function (game) {
   noStroke();
   textFont(fonts.VT323);
   textSize(
-    11 + Math.round(4 * Math.pow(1 + this.percentage(), 1.25))
+    this.textSize + Math.round(4 * Math.pow(1 + this.percentage(), 1.25))
   );
   text(textString, textX, textY);
 };
@@ -326,10 +326,11 @@ function onHitComboCounterIncrease(points, target, ball, game) {
   game.events.push(new ScoreEvent({
     points: points,
     target: target,
-    timeToLiveMs: 750,
-    fillColor: kp > 0.75 ? 'orange' : 'white',
+    timeToLiveMs: kp > 0.75 ? 950 : 750,
+    fillColor: kp > 0.75 ? 'yellow' : 'white',
     x: target.centerX,
     y: target.centerY,
+    textSize: kp > 0.75 ? 16 : 11,
   }));
   game.events.push(new ExplosionEvent({
     x: ball.position.x,
@@ -776,7 +777,6 @@ function drawBall(ball) {
     if (kineticEnergy > maximumKinecticEnergy) {
       // maximumKinecticEnergy = kineticEnergy;
       kineticEnergy = maximumKinecticEnergy;
-      console.log('max ke = ', maximumKinecticEnergy);
     }
     var K = kineticEnergy / maximumKinecticEnergy;
 
