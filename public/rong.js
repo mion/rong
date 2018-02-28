@@ -612,8 +612,8 @@ function updateBall(ball, game) {
     var distanceToPad = nextBallPos.dist(pad.position);
     var minimumDistanceForCollision = ball.radius + pad.radius;
     if (distanceToPad < minimumDistanceForCollision) {
-      game.state = 'GAME_OVER';
-      playGameOverSound();
+      // game.state = 'GAME_OVER';
+      // playGameOverSound();
     }
   }
 }
@@ -1025,7 +1025,30 @@ function drawEvent(event) {
 
 function drawGame(game) {
   clear();
-  if (game.state == 'GAME_RUNNING') {
+  if (game.state == 'GAME_START') {
+    noStroke();
+    textFont(fonts.VT323);
+    fill('yellow');
+    textSize(72);
+    var x = GAME_BOUNDS_PADDING + GAME_BOUNDS_WIDTH * (0.20);
+    text("RONG", x, game.center.y);
+    fill('gray');
+    textSize(18);
+    text("version 0.1.0", x, 20 + game.center.y);
+
+    fill('white');
+    textSize(32);
+    text("> New game", x, 120 + game.center.y);
+
+    fill('white');
+    textSize(32);
+    text("> Highscore", x, 160 + game.center.y);
+
+    fill('white');
+    textSize(32);
+    text("> Credits", x, 200 + game.center.y);
+
+  } else if (game.state == 'GAME_RUNNING') {
     drawBounds(game);
     for (var i = 0; i < game.balls.length; i++) {
       var ball = game.balls[i];
@@ -1222,10 +1245,23 @@ function setup() {
 
   game = {
     level: 1,
+    menu: {
+      start: {
+        playSelected: true,
+        highscoreSelected: false,
+        credits: false
+      },
+      pause: {
+
+      },
+       gameOver: {
+
+       }
+    },
     timeLevelStartedAt: (new Date()).getTime(),
     hitComboCounter: 0,
     events: [],
-    state: 'GAME_RUNNING',
+    state: 'GAME_START',
     score: 0,
     targets: [
       new Target('TARGET_TOP', {axis: 0.5, size: 0.5}),
