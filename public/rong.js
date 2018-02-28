@@ -19,7 +19,8 @@ var GAME_SHOULD_LOAD_SOUNDS = false;
 
 var GAME_POINTS_BASE_TARGET = 1000;
 
-var GAME_GRAVITY_CONSTANT = 37.0;
+var PULL_GRAVITY_CONST = 30.0;
+var PUSH_GRAVITY_CONST = 10.0;
 var PLAYER_BALL_MASS = 0.4;
 var PLAYER_BALL_RADIUS = 7.0;
 var BALL_SPEED_BONUS_MULTIPLIER_AFTER_HIT_TARGET = 0.85;
@@ -45,6 +46,7 @@ var game = null;
 var tail = [];
 var sounds = null;
 var fonts = {};
+var keyForControl = {};
 var playerBall = null;
 var maximumKinecticEnergy = 35.0;
 
@@ -565,15 +567,15 @@ function updateBall(ball, game) {
   var pad = game.pad;
   var bounds = game.bounds;
 
-  if (keyIsDown(SHIFT)) {
+  if (keyIsDown(keyForControl.PULL)) {
     var direction = p5.Vector.sub(pad.position, ball.position);
     var distance = ball.position.dist(pad.position);
-    var force = (GAME_GRAVITY_CONSTANT * pad.mass * ball.mass) / (distance * distance);
+    var force = (PULL_GRAVITY_CONST * pad.mass * ball.mass) / (distance * distance);
     ball.acceleration = p5.Vector.mult(direction, force);
-  } else if (keyIsDown(ESCAPE)) {
+  } else if (keyIsDown(keyForControl.PUSH)) {
     var direction = p5.Vector.sub(ball.position, pad.position);
     var distance = ball.position.dist(pad.position);
-    var force = (GAME_GRAVITY_CONSTANT * pad.mass * ball.mass) / (distance * distance);
+    var force = (PUSH_GRAVITY_CONST * pad.mass * ball.mass) / (distance * distance);
     ball.acceleration = p5.Vector.mult(direction, force);
   } else {
     ball.acceleration = createVector(0, 0);
@@ -944,10 +946,10 @@ function drawPad(game) {
   noFill();
   var BEAM_ALPHA_ON = 0.5;
   var BEAM_ALPHA_OFF = 0.0;
-  if (keyIsDown(SHIFT)) {
+  if (keyIsDown(keyForControl.PULL)) {
     stroke(`rgba(255, 255, 255, ${BEAM_ALPHA_ON})`);
     line(game.pad.position.x, game.pad.position.y, playerBall.position.x, playerBall.position.y);
-  } else if (keyIsDown(ESCAPE)) {
+  } else if (keyIsDown(keyForControl.PUSH)) {
     stroke(`rgba(255, 255, 255, ${BEAM_ALPHA_ON})`);
     line(game.pad.position.x, game.pad.position.y, playerBall.position.x, playerBall.position.y);
   } else {
@@ -1225,6 +1227,9 @@ function preload() {
 
 function setup() {
   console.log('setup');
+
+  keyForControl['PULL'] = DOWN_ARROW;
+  keyForControl['PUSH'] = UP_ARROW;
 
   var initialBallSpeed = 5*random();
   var initialBallVelocity = p5.Vector.random2D();
