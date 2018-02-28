@@ -14,16 +14,28 @@ var CANVAS_WIDTH = 600;
 var GAME_BOUNDS_PADDING = 5;
 var GAME_BOUNDS_WIDTH = CANVAS_WIDTH - 2*GAME_BOUNDS_PADDING;
 var GAME_BOUNDS_HEIGHT = CANVAS_HEIGHT - 2*GAME_BOUNDS_PADDING;
-var GAME_GRAVITY_CONSTANT = 37.0;
+
 var GAME_SHOULD_LOAD_SOUNDS = false;
+
 var GAME_POINTS_BASE_TARGET = 1000;
+
+var GAME_GRAVITY_CONSTANT = 37.0;
+var PLAYER_BALL_MASS = 0.4;
+var PLAYER_BALL_RADIUS = 7.0;
 var BALL_SPEED_BONUS_MULTIPLIER_AFTER_HIT_TARGET = 0.85;
-var BALL_SPEED_WALL_DAMPING_MULTIPLIER = 0.95;
-var BALL_ARROW_SIZE_CONSTANT = 20.0;
-var BALL_ARROW_HEAD_CONSTANT = 7.0;
-var PAD_SPEED = 0.40;
+var BALL_SPEED_WALL_DAMPING_MULTIPLIER = 0.75;
+var PAD_MASS = 3.2;
+var PAD_RADIUS = 9;
+var PAD_SPEED = 0.50;
 var PAD_DAMPING = 0.95;
 var PAD_RADIUS_INCREASE_MULTIPLIER = 0.05;
+var TARGET_BONUS_PROB = 0.15;
+
+var GFX_TARGET_ROUNDED_CORNER_RADIUS = 0;
+var TARGET_DEFAULT_THICKNESS = 10.0;
+var TARGET_BONUS_THICKNESS = 7.5;
+var BALL_ARROW_SIZE_CONSTANT = 20.0;
+var BALL_ARROW_HEAD_CONSTANT = 7.0;
 var TAIL_SIZE = 25;
 var TAIL_DELAY_MS = 50;
 var TAIL_RADIUS = 5.0;
@@ -528,7 +540,6 @@ function updateTargetAfterHit(target, ball, game) {
         'TARGET_RIGHT',
         'TARGET_BOTTOM'
       ];
-      var TARGET_BONUS_PROB = 0.35 + Math.max(0.10, game.level * 0.01);
       _.each(types, function (type) {
         var targetsToBeCreated = _targetsForLevel(game.level);
         var maxTargetSize = 1.0 / targetsToBeCreated;
@@ -617,8 +628,8 @@ function updateBall(ball, game) {
     var distanceToPad = nextBallPos.dist(pad.position);
     var minimumDistanceForCollision = ball.radius + pad.radius;
     if (distanceToPad < minimumDistanceForCollision) {
-      // game.state = 'GAME_OVER';
-      // playGameOverSound();
+      game.state = 'GAME_OVER';
+      playGameOverSound();
     }
   }
 }
@@ -783,8 +794,8 @@ function drawHUD(game) {
 
 function drawBounds(game) {
   fill('black');
-  stroke('white');
-  strokeWeight(1.0);
+  stroke('rgba(255, 255, 255, 0.25)');
+  strokeWeight(0.5);
   rect(game.bounds.x, game.bounds.y, game.bounds.width, game.bounds.height);
 }
 
@@ -1127,7 +1138,7 @@ Target.prototype.shouldBeDead = function () {
 };
 
 Target.prototype.thickness = function () {
-  return this.isBonus ? 7.5 : 10.0;
+  return this.isBonus ? TARGET_BONUS_THICKNESS : TARGET_DEFAULT_THICKNESS;
 };
 
 Target.prototype.draw = function (game) {
@@ -1168,8 +1179,6 @@ Target.prototype.draw = function (game) {
     console.error('Target has unknown type: ', this);
     throw('unknown target type: ' + this.type);
   }
-
-  var GFX_TARGET_ROUNDED_CORNER_RADIUS = 0;
 
   noStroke();
   if (this.isBonus) {
@@ -1224,14 +1233,14 @@ function setup() {
 
   playerBall = {
     type: 'player',
-    mass: 0.4,
+    mass: PLAYER_BALL_MASS,
     position: createVector(
       GAME_BOUNDS_WIDTH * random(),
       GAME_BOUNDS_HEIGHT * random()
     ),
     acceleration: createVector(0, 0),
     velocity: createVector(0, 0),
-    radius: 7.0
+    radius: PLAYER_BALL_RADIUS
   };
   var balls = _.times(200, function (n) {
     return {
@@ -1288,14 +1297,14 @@ function setup() {
     ),
     balls: balls,
     pad: {
-      mass: 3.8,
+      mass: PAD_MASS,
       position: createVector(
         GAME_BOUNDS_PADDING + (GAME_BOUNDS_WIDTH / 2),
         GAME_BOUNDS_PADDING + (GAME_BOUNDS_HEIGHT / 2)
       ),
       acceleration: createVector(0, 0),
       velocity: createVector(0, 0),
-      radius: 9
+      radius: PAD_RADIUS
     },
     events: []
   };
@@ -1350,7 +1359,6 @@ function keyPressed(event) {
         game.state = 'GAME_CREDITS';
       }
     }
-  } else {
-
+  } else if (game.state === 'GAME_RUNNING') {
   }
 }
