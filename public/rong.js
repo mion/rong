@@ -634,10 +634,18 @@ function updateBall(ball, game) {
   }
 }
 
+var PAD_ANGULAR_SPEED = 0.0125;
+var PAD_ORBIT = 125.0;
+
 function updatePad(game) {
   var bounds = game.bounds;
   var pad = game.pad;
 
+  pad.angle += pad.direction * PAD_ANGULAR_SPEED;
+  pad.position.x = game.center.x + PAD_ORBIT * Math.cos(pad.angle);
+  pad.position.y = game.center.y + PAD_ORBIT * Math.sin(pad.angle);
+
+  /*
   if (keyIsDown(LEFT_ARROW)) {
     pad.velocity.add(createVector(-PAD_SPEED, 0));
   }
@@ -677,22 +685,8 @@ function updatePad(game) {
   } else {
     pad.position.y += pad.velocity.y;
   }
+  */
 }
-
-// function updateTarget(target, game) {
-//   var indexesToBeRemoved = [];
-//   for (var i = 0; i < game.events.length; i++) {
-//     var event = game.events[i];
-//     if (event.type == 'WALL_HIT_EVENT') {
-//       event.process();
-//       indexesToBeRemoved.push(i);
-//     }
-//   }
-//   while (indexesToBeRemoved.length > 0) {
-//     var index = indexesToBeRemoved.pop();
-//     game.events.splice(index, 1);
-//   }
-// }
 
 function updateEvents(game) {
   var indexesToBeRemoved = [];
@@ -942,8 +936,13 @@ function drawTarget(target) {
 * * */
 
 function drawPad(game) {
+  // draw orbit
+  stroke('rgba(255,255,255,0.5)');
   noFill();
-  var BEAM_ALPHA_ON = 0.0;
+  ellipse(game.center.x, game.center.y, 2 * PAD_ORBIT);
+  // draw ball
+  noFill();
+  var BEAM_ALPHA_ON = 0.5;
   var BEAM_ALPHA_OFF = 0.0;
   if (keyIsDown(SHIFT)) {
     stroke(`rgba(255, 255, 255, ${BEAM_ALPHA_ON})`);
@@ -1297,6 +1296,8 @@ function setup() {
     ),
     balls: balls,
     pad: {
+      angle: 0,
+      direction: 1,
       mass: PAD_MASS,
       position: createVector(
         GAME_BOUNDS_PADDING + (GAME_BOUNDS_WIDTH / 2),
