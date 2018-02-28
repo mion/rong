@@ -285,6 +285,11 @@ var WallHitEvent = function (opts) {
 
 WallHitEvent.prototype = new GameEvent();
 
+function playMenuSound() {
+  if (!sounds) { return; }
+  // sounds.menuButton.play();
+}
+
 function playTargetHitSound() {
   if (!sounds) { return; }
   sounds.targetHit.setVolume(0.75);
@@ -1036,15 +1041,17 @@ function drawGame(game) {
     textSize(18);
     text("version 0.1.0", x, 20 + game.center.y);
 
-    fill('white');
+    var clr_on = 'yellow';
+    var clr_off = 'white';
+    fill(game.menu.start.newGameSelected ? clr_on : clr_off);
     textSize(32);
     text("> New game", x, 120 + game.center.y);
 
-    fill('white');
+    fill(game.menu.start.highscoreSelected ? clr_on : clr_off);
     textSize(32);
     text("> Highscore", x, 160 + game.center.y);
 
-    fill('white');
+    fill(game.menu.start.credisSelected ? clr_on : clr_off);
     textSize(32);
     text("> Credits", x, 200 + game.center.y);
 
@@ -1247,16 +1254,16 @@ function setup() {
     level: 1,
     menu: {
       start: {
-        playSelected: true,
+        newGameSelected: true,
         highscoreSelected: false,
-        credits: false
+        creditsSelected: false
       },
       pause: {
 
       },
-       gameOver: {
+      gameOver: {
 
-       }
+      }
     },
     timeLevelStartedAt: (new Date()).getTime(),
     hitComboCounter: 0,
@@ -1299,4 +1306,51 @@ function setup() {
 function draw() {
   updateGame(game);
   drawGame(game);
+}
+
+function keyPressed(event) {
+  console.log('Key value pressed:', event.key);
+  console.log('Key code pressed:', event.code);
+  if (game.state === 'GAME_START') {
+    playMenuSound();
+    if (event.key === 'ArrowDown') {
+      if (game.menu.start.newGameSelected) {
+        game.menu.start.newGameSelected = false;
+        game.menu.start.highscoreSelected = true;
+        game.menu.start.credisSelected = false;
+      } else if (game.menu.start.highscoreSelected) {
+        game.menu.start.newGameSelected = false;
+        game.menu.start.highscoreSelected = false;
+        game.menu.start.credisSelected = true;
+      } else {
+        game.menu.start.newGameSelected = true;
+        game.menu.start.highscoreSelected = false;
+        game.menu.start.credisSelected = false;
+      }
+    } else if (event.key === 'ArrowUp') {
+      if (game.menu.start.newGameSelected) {
+        game.menu.start.newGameSelected = false;
+        game.menu.start.highscoreSelected = false;
+        game.menu.start.credisSelected = true;
+      } else if (game.menu.start.highscoreSelected) {
+        game.menu.start.newGameSelected = true;
+        game.menu.start.highscoreSelected = false;
+        game.menu.start.credisSelected = false;
+      } else {
+        game.menu.start.newGameSelected = false;
+        game.menu.start.highscoreSelected = true;
+        game.menu.start.credisSelected = false;
+      }
+    } else if (event.key === 'Enter') {
+      if (game.menu.start.newGameSelected) {
+        game.state = 'GAME_RUNNING';
+      } else if (game.menu.highscoreSelected) {
+        game.state = 'GAME_HIGHSCORE';
+      } else {
+        game.state = 'GAME_CREDITS';
+      }
+    }
+  } else {
+
+  }
 }
