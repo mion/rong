@@ -306,8 +306,9 @@ function playMenuSound() {
 
 function playTargetHitSound() {
   if (!sounds) { return; }
-  sounds.targetHit.setVolume(0.75);
-  sounds.targetHit.play();
+  var sound = _.shuffle(sounds.targetHit)[0];
+  sound.setVolume(0.75);
+  sound.play();
 }
 
 function playWallHitSound() {
@@ -324,8 +325,8 @@ function playLevelUpSound() {
 
 function playGameOverSound() {
   if (!sounds) { return; }
-  sounds.gameOver.setVolume(0.50);
-  sounds.gameOver.play();
+  // sounds.gameOver.setVolume(0.50);
+  // sounds.gameOver.play();
 }
 
 var objs = [
@@ -1201,23 +1202,23 @@ function preload() {
   var ct = (new Date()).getTime();
   console.log('preloading...');
   if (GAME_SHOULD_LOAD_SOUNDS) {
-    soundFormats('mp3', 'wav');
+    sounds = {};
+    soundFormats('wav');
     sounds.wallHit = loadSound('sounds/ball2.wav');
-    sounds.wallHitStronger = loadSound('sounds/rong_wall_hit.mp3');
-    sounds.targetHit = loadSound('sounds/rong_target_hit.mp3');
-    sounds.gameOver = loadSound('sounds/game_over1.wav');
-    sounds.levelUp = loadSound('sounds/rong_target_hit_level_up.mp3');
-    sounds.loop = [
-      loadSound('sounds/loop_1.mp3'),
-      loadSound('sounds/loop_2.mp3'),
-      loadSound('sounds/loop_3.mp3'),
-      loadSound('sounds/loop_4.mp3')
+    sounds.targetHit = [
+      loadSound('sounds/sfx_ball_hit_a.wav'),
+      loadSound('sounds/sfx_ball_hit_b.wav'),
+      loadSound('sounds/sfx_ball_hit_c.wav')
     ];
-    for (var i = 0; i < sounds.loop.length; i++) {
-      sounds.loop[i].setVolume(0.0);
-      sounds.loop[i].setLoop(true);
-      sounds.loop[i].loop();
-    }
+    sounds.bgLoopGameOver = loadSound('sounds/sfx_bg_loop_game_over.wav');
+    sounds.bgLoopMenu = loadSound('sounds/sfx_bg_loop_menu.wav');
+    sounds.levelUp = loadSound('sounds/sfx_level_up.wav');
+    sounds.loop = [
+      loadSound('sounds/sfx_tension_1.wav'),
+      loadSound('sounds/sfx_tension_2.wav'),
+      loadSound('sounds/sfx_tension_3.wav'),
+      loadSound('sounds/sfx_tension_4.wav')
+    ];
   }
   fonts.VT323 = loadFont('fonts/VT323-Regular.ttf');
   var ft = (new Date()).getTime();
@@ -1227,6 +1228,14 @@ function preload() {
 
 function setup() {
   console.log('setup');
+
+  if (GAME_SHOULD_LOAD_SOUNDS) {
+    for (var i = 0; i < sounds.loop.length; i++) {
+      sounds.loop[i].setVolume(0.0);
+      sounds.loop[i].setLoop(true);
+      sounds.loop[i].loop();
+    }
+  }
 
   keyForControl['PULL'] = DOWN_ARROW;
   keyForControl['PUSH'] = UP_ARROW;
