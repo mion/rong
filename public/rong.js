@@ -1226,17 +1226,7 @@ function preload() {
   console.log(`done! (${et})`);
 }
 
-function setup() {
-  console.log('setup');
-
-  if (GAME_SHOULD_LOAD_SOUNDS) {
-    for (var i = 0; i < sounds.loop.length; i++) {
-      sounds.loop[i].setVolume(0.0);
-      sounds.loop[i].setLoop(true);
-      sounds.loop[i].loop();
-    }
-  }
-
+function createGame() {
   keyForControl['PULL'] = DOWN_ARROW;
   keyForControl['PUSH'] = UP_ARROW;
 
@@ -1255,6 +1245,7 @@ function setup() {
     velocity: createVector(0, 0),
     radius: PLAYER_BALL_RADIUS
   };
+
   var balls = _.times(200, function (n) {
     return {
       type: 'decoration',
@@ -1272,7 +1263,7 @@ function setup() {
     };
   }).concat(playerBall);
 
-  game = {
+  return {
     level: 1,
     menu: {
       start: {
@@ -1323,6 +1314,20 @@ function setup() {
     },
     events: []
   };
+}
+
+function setup() {
+  console.log('setup');
+
+  if (GAME_SHOULD_LOAD_SOUNDS) {
+    for (var i = 0; i < sounds.loop.length; i++) {
+      sounds.loop[i].setVolume(0.0);
+      sounds.loop[i].setLoop(true);
+      sounds.loop[i].loop();
+    }
+  }
+
+  game = createGame();
 
   createCanvas(CANVAS_WIDTH, CANVAS_HEIGHT);
 }
@@ -1375,5 +1380,8 @@ function keyPressed(event) {
       }
     }
   } else if (game.state === 'GAME_RUNNING') {
+
+  } else if (game.state === 'GAME_OVER') {
+    game = createGame();
   }
 }
