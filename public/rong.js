@@ -598,11 +598,7 @@ function updateBall(ball, game) {
     if (ball.type === 'player') {
       game.events.push(new WallHitEvent({wall: 'WALL_LEFT', ball: ball}));
     }
-  } else {
-    ball.position.x += ball.velocity.x;
-  }
-
-  if ((ball.position.y + ball.radius) + ball.velocity.y > bounds.y + bounds.height) {
+  } else if ((ball.position.y + ball.radius) + ball.velocity.y > bounds.y + bounds.height) {
     ball.position.y = (bounds.y + bounds.height) - ball.radius;
     ball.velocity.y *= -1;
     ball.velocity.mult(BALL_SPEED_WALL_DAMPING_MULTIPLIER);
@@ -617,6 +613,7 @@ function updateBall(ball, game) {
       game.events.push(new WallHitEvent({wall: 'WALL_TOP', ball: ball}));
     }
   } else {
+    ball.position.x += ball.velocity.x;
     ball.position.y += ball.velocity.y;
   }
 
@@ -963,11 +960,16 @@ function drawPad(game) {
 }
 
 function drawGameOverHUD(game) {
+  // black cover
+  fill('rgba(0, 0, 0, 0.838)');
+  rect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+  // game over
+  textFont(fonts.VT323);
   textSize(32);
   fill('white');
   noStroke();
-  textFont(fonts.VT323);
   text('GAME OVER', game.center.x, game.center.y);
+  // score
   textSize(48);
   fill('rgba(200,255,25,0.9)');
   noStroke();
@@ -1041,54 +1043,62 @@ function drawEvent(event) {
   }
 }
 
+function drawRunningGame(game) {
+  drawBounds(game);
+  for (var i = 0; i < game.balls.length; i++) {
+    var ball = game.balls[i];
+    if (ball !== playerBall) {
+      drawBall(ball);
+    }
+  }
+  drawTail(game);
+  drawPad(game);
+  drawBall(playerBall);
+  for (var i = 0; i < game.targets.length; i++) {
+    var target = game.targets[i];
+    target.draw(game);
+  }
+  drawHUD(game);
+  for (var i = 0; i < game.events.length; i++) {
+    var event = game.events[i];
+    event.draw(game);
+  }
+}
+
+function drawStartedGame(game) {
+  noStroke();
+  textFont(fonts.VT323);
+  fill('yellow');
+  textSize(72);
+  var x = GAME_BOUNDS_PADDING + GAME_BOUNDS_WIDTH * (0.20);
+  text("RONG", x, game.center.y);
+  fill('gray');
+  textSize(18);
+  text("version 0.1.0", x, 20 + game.center.y);
+
+  var clr_on = 'yellow';
+  var clr_off = 'white';
+  fill(game.menu.start.newGameSelected ? clr_on : clr_off);
+  textSize(32);
+  text("> New game", x, 120 + game.center.y);
+
+  fill(game.menu.start.highscoreSelected ? clr_on : clr_off);
+  textSize(32);
+  text("> Highscore", x, 160 + game.center.y);
+
+  fill(game.menu.start.credisSelected ? clr_on : clr_off);
+  textSize(32);
+  text("> Credits", x, 200 + game.center.y);
+}
+
 function drawGame(game) {
   clear();
   if (game.state == 'GAME_START') {
-    noStroke();
-    textFont(fonts.VT323);
-    fill('yellow');
-    textSize(72);
-    var x = GAME_BOUNDS_PADDING + GAME_BOUNDS_WIDTH * (0.20);
-    text("RONG", x, game.center.y);
-    fill('gray');
-    textSize(18);
-    text("version 0.1.0", x, 20 + game.center.y);
-
-    var clr_on = 'yellow';
-    var clr_off = 'white';
-    fill(game.menu.start.newGameSelected ? clr_on : clr_off);
-    textSize(32);
-    text("> New game", x, 120 + game.center.y);
-
-    fill(game.menu.start.highscoreSelected ? clr_on : clr_off);
-    textSize(32);
-    text("> Highscore", x, 160 + game.center.y);
-
-    fill(game.menu.start.credisSelected ? clr_on : clr_off);
-    textSize(32);
-    text("> Credits", x, 200 + game.center.y);
-
+    drawStartedGame(game);
   } else if (game.state == 'GAME_RUNNING') {
-    drawBounds(game);
-    for (var i = 0; i < game.balls.length; i++) {
-      var ball = game.balls[i];
-      if (ball !== playerBall) {
-        drawBall(ball);
-      }
-    }
-    drawTail(game);
-    drawPad(game);
-    drawBall(playerBall);
-    for (var i = 0; i < game.targets.length; i++) {
-      var target = game.targets[i];
-      target.draw(game);
-    }
-    drawHUD(game);
-    for (var i = 0; i < game.events.length; i++) {
-      var event = game.events[i];
-      event.draw(game);
-    }
+    drawRunningGame(game);
   } else if (game.state == 'GAME_OVER') {
+    drawRunningGame(game);
     drawGameOverHUD(game);
   }
 }
