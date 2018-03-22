@@ -1,10 +1,12 @@
-var verify = function (msg, fn) {
-  if (fn()) {
-    console.log('OK: ', msg);
+console.log("Loading script: test.js");
+
+function verify(msg, exp) {
+  if (exp) {
+    console.log(' *  OK: ', msg);
   } else {
-    console.error('ERROR: ', msg);
+    console.error('(!) ERROR: ', msg);
   }
-};
+}
 
 function testVectorAdd() {
   var v1 = new Vector(1, 2);
@@ -18,5 +20,10 @@ function testVectorAdd() {
   );
 }
 
-function testVectorMult() {
+function test() {
+  console.log("[*] Running test suite...");
+  testVectorAdd();
+  console.log("[*] Test suite complete.");
 }
+
+test();

@@ -1,3 +1,5 @@
+console.log("Loading script: world.js");
+
 class World {
   constructor(opt) {
     this.width = _.defaultTo(opt.width, 100);

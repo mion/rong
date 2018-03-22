@@ -1,3 +1,5 @@
+console.log("Loading script: particle.js");
+
 class Particle {
   constructor(id, opt) {
     this.id = id;
