@@ -1,10 +1,12 @@
-console.log("Loading script: test.js");
+lg("Loading script: test.js");
 
-function verify(msg, exp) {
-  if (exp) {
-    console.log(' *  OK: ', msg);
+const assert = console.assert;
+
+function test(msg, undef) {
+  if (typeof undex === 'undefined') {
+    lg('s', msg);
   } else {
-    console.error('(!) ERROR: ', msg);
+    lg('e', msg);
   }
 }
 
@@ -14,16 +16,27 @@ function testVectorAdd() {
 
   var v3 = v1.add(v2);
 
-  verify(
-    "Vector.add should return (4, -1) for (1, 2) and (3, -3)",
-    v3.x === 4 && v3.y === -1
+  test("Vector.add should return (4, -1) for (1, 2) and (3, -3)",
+    assert(v3.x === 4 && v3.y === -1)
   );
 }
 
-function test() {
-  console.log("[*] Running test suite...");
-  testVectorAdd();
-  console.log("[*] Test suite complete.");
+function testVectorDistance() {
+  var v1 = new Vector(0, 0);
+  var v2 = new Vector(0, 3);
+
+  var dist = v1.distance(v2);
+
+  test("Distance between (0, 0) and (0, 3) should be 3",
+    assert(dist === 3)
+  );
 }
 
-test();
+function runTests() {
+  lg(0, "Running test suite...");
+  testVectorAdd();
+  testVectorDistance();
+  lg(0, "Test suite complete");
+}
+
+runTests();

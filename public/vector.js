@@ -1,4 +1,4 @@
-console.log("Loading script: vector.js");
+lg("Loading script: vector.js");
 
 class Vector {
   constructor(x, y) {
@@ -12,5 +12,8 @@ class Vector {
 
   add(p) {
     return new Vector(this.x + p.x, this.y + p.y);
+  }
+
+  size() {
   }
 }

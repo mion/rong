@@ -1,4 +1,4 @@
-console.log("Loading script: target.js");
+lg("Loading script: target.js");
 
 class Target {
   constructor() {

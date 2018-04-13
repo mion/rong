@@ -1,4 +1,4 @@
-console.log("Loading script: engine.js");
+lg("Loading script: engine.js");
 
 class Engine {
   constructor() {

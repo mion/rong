@@ -1,4 +1,4 @@
-console.log("Loading script: world.js");
+lg("Loading script: world.js");
 
 class World {
   constructor(opt) {

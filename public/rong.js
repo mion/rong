@@ -1,1 +1,1 @@
-console.log("Loading script: rong.js");
+lg("Loading script: rong.js");

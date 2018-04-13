@@ -1,4 +1,4 @@
-console.log("Loading script: particle.js");
+lg("Loading script: particle.js");
 
 class Particle {
   constructor(id, opt) {
