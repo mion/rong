@@ -15,5 +15,18 @@ class Vector {
   }
 
   size() {
+    return 0;
+  }
+
+  unit() {
+    return new Vector(0, 0);
+  }
+
+  rotateTo(angleInRadians) {
+    return new Vector(0, 0);
+  }
+
+  rotateBy(angleInRadians) {
+    return new Vector(0, 0);
   }
 }

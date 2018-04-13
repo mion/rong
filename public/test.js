@@ -10,6 +10,15 @@ function test(msg, undef) {
   }
 }
 
+function testVector() {
+  testVectorAdd();
+  testVectorDistance();
+  testVectorSize();
+  testVectorUnit();
+  testVectorRotateTo();
+  testVectorRotateBy();
+}
+
 function testVectorAdd() {
   var v1 = new Vector(1, 2);
   var v2 = new Vector(3, -3);
@@ -27,15 +36,30 @@ function testVectorDistance() {
 
   var dist = v1.distance(v2);
 
-  test("Distance between (0, 0) and (0, 3) should be 3",
+  test("Vector.distance between (0, 0) and (0, 3) should be 3",
     assert(dist === 3)
   );
 }
 
+function testVectorSize() {
+
+}
+
+function testVectorUnit() {
+
+}
+
+function testVectorRotateTo() {
+
+}
+
+function testVectorRotateBy() {
+
+}
+
 function runTests() {
   lg(0, "Running test suite...");
-  testVectorAdd();
-  testVectorDistance();
+  testVector();
   lg(0, "Test suite complete");
 }
 
